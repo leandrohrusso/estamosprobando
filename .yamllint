@@ -1,0 +1,19 @@
+---
+# .yamllint · config del linter para los YAMLs del pack workflow-base.
+# Paridad con .markdownlint.json · deshabilita reglas estilísticas conservando
+# las que detectan bugs reales (syntax · duplicate keys · indentation rota).
+
+extends: default
+
+rules:
+  # line-length: estilo del pack permite líneas largas (paridad MD013 del markdown)
+  line-length: disable
+  # document-start: '---' al inicio NO obligatorio · archivos del pack pueden
+  # arrancar con comentarios `#` o key directo
+  document-start: disable
+  # comments: spacing strict de comentarios `# foo` · estilo del pack varía
+  comments: disable
+  # comments-indentation: estilo del pack permite comentarios desalineados
+  comments-indentation: disable
+  # truthy: 'yes'/'no' válidos en agents-applicability.yml (NO solo 'true'/'false')
+  truthy: disable

@@ -1,0 +1,54 @@
+#!/usr/bin/env sh
+# =====================================================================
+# post-commit · backup automático a origin/dev-backup
+# =====================================================================
+# Política "1 push = 1 PR = 1 CI" (.claude/rules/push-and-ci-policy.md):
+# cada commit local se replica a `origin/dev-backup` para sobrevivir
+# caída de WSL2/disco. La branch `dev-backup` NO triggerea CI (workflow
+# filtra a eventos `pull_request:` only · ver .github/workflows/ci.yml).
+#
+# Background (&) + log de FALLOS a .git/post-commit-backup.log.
+# Patrón aprendido: `--quiet 2>&1` esconde rechazos por días sin que nadie
+# note · acá cualquier fallo queda registrado con timestamp + SHA + razón ·
+# revisar `.git/post-commit-backup.log` si se sospecha gap del backup.
+# Memoria persistente: .claude/memory/feedback/post-commit-hook-must-log-failures.md
+#
+# Auto-recovery non-fast-forward post-squash:
+# Tras un squash merge a main, origin/dev-backup queda stale si
+# sync-dev-after-squash-merge.sh NO corrió. El push fast-forward falla con
+# "non-fast-forward". El hook detecta non-FF y auto-recupera con
+# --force-with-lease (SAFE · protege contra race conditions · dev-backup
+# por diseño es backup unidireccional del único developer que toca dev).
+# Otros fallos (auth · red · permisos) siguen el path normal de log
+# SIN auto-recovery.
+#
+# Recovery si WSL2 muere:
+#   git fetch origin dev-backup && git checkout dev-backup
+# =====================================================================
+
+LOG="$(git rev-parse --git-dir)/post-commit-backup.log"
+SHA="$(git rev-parse --short HEAD)"
+TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+(
+    if OUTPUT="$(git push origin HEAD:dev-backup 2>&1)"; then
+        :  # Success · silencioso (caso normal)
+    elif echo "$OUTPUT" | grep -q "non-fast-forward"; then
+        # Caso conocido post-squash: dev-backup quedó stale tras squash merge
+        # sin re-sincronizar. --force-with-lease es safe (protege contra race
+        # con cambios remotos no anticipados). dev-backup es backup
+        # UNIDIRECCIONAL del único developer · semánticamente nadie más lo
+        # toca · este force es esperado y correcto.
+        if RECOVER="$(git push origin HEAD:dev-backup --force-with-lease 2>&1)"; then
+            printf '%s · %s · NON-FF AUTO-RECOVERED via --force-with-lease\n' "$TS" "$SHA" >> "$LOG"
+        else
+            printf '%s · %s · NON-FF + FORCE-WITH-LEASE FAILED\n%s\n---\n' "$TS" "$SHA" "$RECOVER" >> "$LOG"
+        fi
+    else
+        # Fallo por otra causa (red caída · auth · GitHub down · disco lleno):
+        # log para diagnóstico · el próximo commit triggerea hook nuevo que
+        # pushea el HEAD actualizado cuando la causa raíz se resuelva.
+        EXIT=$?
+        printf '%s · %s · FAIL (exit %d)\n%s\n---\n' "$TS" "$SHA" "$EXIT" "$OUTPUT" >> "$LOG"
+    fi
+) &

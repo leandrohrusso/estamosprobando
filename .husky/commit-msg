@@ -1,0 +1,32 @@
+#!/usr/bin/env sh
+# =====================================================================
+# commit-msg · firma user obligatoria al modificar agents-applicability.yml
+# =====================================================================
+# El config `.claude/config/agents-applicability.yml` controla qué sub-agentes
+# domain-tight de /revisar y /revisar-main se spawnean. Cambios al config
+# afectan el comportamiento del pipeline de review · regla #35
+# (agents-conditional-by-domain.md § Anti-rationalization #3) declara que
+# modificaciones requieren firma user explícita.
+#
+# Este hook valida que SI el commit toca el config, el commit message
+# incluye una de las firmas canónicas: "🔵" · "firma user" · "firma 🔵".
+# Cero firma silenciosa · defense in depth de la doctrina firme.
+#
+# El smoke `tests/scripts/infra-flujo/husky-hooks-not-degenerated.sh`
+# verifica que este hook NO se degenere.
+# =====================================================================
+
+COMMIT_MSG_FILE="$1"
+
+# ¿El commit modifica el config de aplicabilidad?
+if git diff --cached --name-only | grep -qFx ".claude/config/agents-applicability.yml"; then
+  # Validar firma canónica en el commit message
+  if ! grep -qE "🔵|firma user|firma 🔵" "$COMMIT_MSG_FILE"; then
+    echo "❌ Commit toca .claude/config/agents-applicability.yml · firma user requerida (regla #35)." >&2
+    echo "   Agregá una de: '🔵' · 'firma user' · 'firma 🔵' al commit message." >&2
+    echo "   Doctrina: .claude/rules/agents-conditional-by-domain.md § Anti-rationalization #3" >&2
+    exit 1
+  fi
+fi
+
+exit 0

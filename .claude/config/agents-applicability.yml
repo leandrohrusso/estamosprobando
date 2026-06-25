@@ -1,0 +1,54 @@
+# =====================================================================
+# agents-applicability.yml · config opt-in/opt-out de sub-agentes
+# domain-tight de los skills /revisar y /revisar-main del pack.
+# =====================================================================
+#
+# QUÉ ES:
+#   Los skills /revisar y /revisar-main spawnean 9 sub-agentes Opus
+#   paralelos. 6 son universales o amplios (architect · security · tests
+#   · correctness · a11y · i18n) y aplican a todo proyecto. 3 son
+#   domain-tight (multi-tenant · atomicity · migration-safety) y SOLO
+#   aplican cuando el proyecto cumple ciertas condiciones del dominio.
+#
+# QUÉ HACE ESTE ARCHIVO:
+#   Declara cuáles de los 3 sub-agentes domain-tight están habilitados
+#   en este proyecto. /revisar y /revisar-main leen este archivo en su
+#   Paso 0.6 y solo spawnean los habilitados · cero false positives en
+#   proyectos donde el dominio no aplica.
+#
+# CÓMO SE ALIMENTA:
+#   El bootstrap del proyecto destino llena este archivo según las
+#   decisiones declaradas en BUSINESS_LOGIC.md § 8 "Constraints del
+#   dominio que activan sub-agentes". Cero defaults silenciosos · cada
+#   flag se firma explícito por el dev del proyecto destino.
+#
+# DEFAULT AL BOOT DEL PACK:
+#   Cada flag arranca en "unknown" · forza decisión explícita del
+#   proyecto. /revisar y /revisar-main piden firma user en cada
+#   invocación hasta que el flag esté en "yes" o "no".
+#
+# CONVENCIÓN:
+#   Los 6 sub-agentes universales/amplios NO tienen flag · siempre corren.
+#   Solo los 3 domain-tight son configurables vía este archivo.
+#
+# DOCTRINA CANÓNICA:
+#   Regla firme #35 [`agents-conditional-by-domain.md`] · SoT del
+#   mecanismo + procedimiento de adopción + invariantes.
+#
+# =====================================================================
+
+agents:
+  multi-tenant:
+    enabled: unknown
+    condition: "Proyecto declara multi_tenant: yes en BUSINESS_LOGIC.md § 8 Constraints"
+    description: "SaaS multi-tenant con aislamiento entre tenants (RLS por organization_id o equivalente)"
+
+  atomicity:
+    enabled: unknown
+    condition: "Proyecto declara stock_atomicity: yes en BUSINESS_LOGIC.md § 8 Constraints"
+    description: "Maneja stock · contadores · race conditions sobre BD compartida que requieren RPCs SQL atómicas"
+
+  migration-safety:
+    enabled: unknown
+    condition: "Proyecto declara relational_db_with_migrations: yes en BUSINESS_LOGIC.md § 8 Constraints"
+    description: "BD relacional con migrations + RLS policies (Postgres/Supabase/MySQL/etc)"

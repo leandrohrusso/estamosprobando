@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# =====================================================================
+# pre-commit · typecheck full + lint-staged
+# =====================================================================
+# typecheck no se puede correr "solo del archivo" — TS necesita el proyecto entero.
+# lint-staged corre ESLint --fix sobre archivos staged (rápido · evita lint global).
+#
+# Si tu stack no usa TS o ESLint, adaptar los comandos abajo.
+# El smoke `tests/scripts/infra-flujo/husky-hooks-not-degenerated.sh` verifica
+# que este hook NO se degenera (no se reduce a `exit 0`).
+# =====================================================================
+
+npm run typecheck || exit 1
+npx lint-staged || exit 1

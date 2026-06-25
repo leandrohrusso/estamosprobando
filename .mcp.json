@@ -1,0 +1,4 @@
+{
+  "_comment": "Project-scoped MCP servers (Claude Code) · cada adopter declara los suyos según stack. Ejemplos típicos: Supabase (BD relacional) · Playwright (E2E browser) · next-devtools (Next.js) · Linear · Sentry · GitHub. Sintaxis: cada entry bajo `mcpServers` lleva `command` + `args` + opcional `env`. Credenciales reales NUNCA acá (este archivo se versiona con git) · usar `${VAR}` para inyectar desde shell o `.claude/settings.local.json` (gitignored). Docs: https://docs.claude.com/en/docs/claude-code/mcp",
+  "mcpServers": {}
+}

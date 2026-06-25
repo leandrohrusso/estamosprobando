@@ -1,0 +1,157 @@
+# =====================================================================
+# CI remoto · paridad con scripts/local-ci.sh
+# =====================================================================
+# Política "1 push = 1 PR = 1 CI" (regla #27 .claude/rules/push-and-ci-policy.md):
+# este workflow es el ÚNICO CI run por PRP del producto, sobre el evento
+# `pull_request` con PR no-draft. NO triggerea sobre push (cero CI redundante).
+# NO triggerea sobre PR en draft (workflow filtra `draft == false` en cada job).
+#
+# INVARIANTE DE PARIDAD CON scripts/local-ci.sh:
+# El orden de jobs aquí (con `needs:`) debe matchear el orden de ALL_JOBS
+# en scripts/local-ci.sh. Si cambia el orden o se agregan jobs, actualizar
+# AMBOS archivos en el mismo commit.
+# =====================================================================
+
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  # NO trigger sobre push: para política "1 push = 1 PR = 1 CI"
+  # NO trigger sobre branches específicas (todos los PRs son válidos)
+
+# Permitir solo 1 CI run concurrente por PR (cancela el previo si llega push nuevo).
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      # TODO: reemplazar con comando de typecheck del proyecto
+      - run: npm run typecheck
+
+  lint:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      # TODO: reemplazar con comando de lint del proyecto
+      - run: npm run lint
+      # Smokes infra-flujo · invariantes firmes (ABORT en fallo)
+      - name: Smoke · rules shape P8
+        run: bash tests/scripts/infra-flujo/rules-shape-p8.sh
+      - name: Smoke · skip-ci NOT in PR head
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash tests/scripts/infra-flujo/skip-ci-not-in-pr-head.sh
+      - name: Smoke · agents domain-tight have Pre-condition (regla #35)
+        run: bash tests/scripts/infra-flujo/agents-domain-tight-have-precondition.sh
+      - name: Smoke · job order parity ALL_JOBS ↔ ci.yml needs (regla #34)
+        run: bash tests/scripts/infra-flujo/job-order-parity.sh
+      - name: Smoke · sync-dev pre-check tree-comparison (O-8)
+        run: bash tests/scripts/infra-flujo/sync-dev-pre-check-tree-comparison.sh
+      - name: Smoke · sync-dev guard local-commits-ahead-of-main
+        run: bash tests/scripts/infra-flujo/sync-dev-guards-local-commits-ahead.sh
+      - name: Smoke · fresh-install canonical state (template contract)
+        run: bash tests/scripts/infra-flujo/fresh-install-canonical-state.sh
+      - name: Smoke · preflight environment (Postgres+Supabase · skip-safe sin TEST_DATABASE_URL)
+        run: bash tests/scripts/infra-flujo/preflight-environment.sh
+
+  build:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      # TODO: reemplazar con comando de build del proyecto
+      - run: npm run build
+
+  unit:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      # TODO: reemplazar con comando de unit tests · si no tiene, eliminar este job
+      - run: npm run test:unit
+
+  e2e:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      # TODO: instalar Playwright browsers · ej: npx playwright install --with-deps
+      # TODO: pre-condición: TEST DB seedeada (vía secret env vars del proyecto)
+      # State baseline (Postgres+Supabase · skip-safe sin TEST_DATABASE_URL)
+      - name: Smoke · state baseline post-migrations
+        run: bash tests/scripts/infra-flujo/state-baseline-post-migrations.sh
+      - name: Smoke · state assertion pre-e2e
+        run: bash tests/scripts/infra-flujo/state-assertion.sh
+      - run: npm run test:e2e
+
+  # TODO: reemplazar con comando de tests SQL contra TEST DB del proyecto.
+  # Si el stack NO tiene BD, eliminar este job entero (líneas hasta el próximo
+  # job `infra-flujo-warnings`) Y remover el bloque sql en scripts/local-ci.sh
+  # para mantener paridad entre ambos archivos.
+  sql:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      # State baseline (Postgres+Supabase · skip-safe sin TEST_DATABASE_URL)
+      # Cada runner remoto crea su propio baseline (/tmp no se comparte entre
+      # jobs). Adopter con setup sofisticado puede artifact-share post-migrations.
+      - name: Smoke · state baseline post-migrations
+        run: bash tests/scripts/infra-flujo/state-baseline-post-migrations.sh
+      - name: Smoke · state assertion pre-sql
+        run: bash tests/scripts/infra-flujo/state-assertion.sh
+      - run: bash scripts/run-sql-tests.sh
+
+  # Operativos · continue-on-error · warnings no bloqueantes
+  infra-flujo-warnings:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke · skills flujo shape
+        run: bash tests/scripts/infra-flujo/skills-shape.sh
+      - name: Smoke · husky hooks not degenerated
+        run: bash tests/scripts/infra-flujo/husky-hooks-not-degenerated.sh

@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# =====================================================================
+# pre-push · typecheck full + lint full
+# =====================================================================
+# Gate antes de push · más estricto que pre-commit (lint completo, no solo staged).
+# E2E NO corre acá — eso queda para CI (puede tardar minutos · ver scripts/local-ci.sh).
+#
+# Si tu stack no usa TS o ESLint, adaptar los comandos abajo.
+# El smoke `tests/scripts/infra-flujo/husky-hooks-not-degenerated.sh` verifica
+# que este hook NO se degenera (no se reduce a `exit 0`).
+# =====================================================================
+
+npm run typecheck || exit 1
+npm run lint || exit 1

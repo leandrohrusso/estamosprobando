@@ -1,0 +1,54 @@
+name: Sync dev branches after merge to main
+
+# Dispara post-squash-merge a main · realinea origin/dev y origin/dev-backup
+# con origin/main para evitar drift entre historias (squash genera divergencia
+# aunque el código sea idéntico · ver scripts/sync-dev-after-squash-merge.sh).
+# Materializa la regla operacional firme #27 push-and-ci-policy
+# (.claude/rules/push-and-ci-policy.md) · blindaje contra olvido humano del
+# script local post-merge.
+#
+# Asunciones (si tu proyecto NO las cumple, deshabilitá este workflow):
+# - Ramas remotas `main` · `dev` · `dev-backup` existen en origin.
+# - Flujo de 6 pasos con merge --squash a main desde PRs en branch dev (paridad
+#   regla #27 § Política de pushes y CI runs · 1 push = 1 PR = 1 CI por PRP).
+# - Hook post-commit hace push-quiet a origin/dev-backup (regla #27 § Backup
+#   automático). Si tu proyecto no tiene `dev-backup`, eliminá el paso 3.
+#
+# Stack adaptation: este workflow es GitHub Actions específico. Si tu CI vive
+# en GitLab/CircleCI/Bitbucket Pipelines/etc, adaptá el shape (los principios
+# realineamiento post-squash + force-with-lease + concurrency cancel-free + git
+# fetch upfront son universales · la sintaxis YAML/jobs cambia per stack).
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: sync-dev-after-merge
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch dev and dev-backup
+        run: git fetch origin dev dev-backup
+
+      - name: Realign origin/dev with origin/main
+        run: |
+          DEV_SHA=$(git rev-parse origin/dev)
+          git push origin main:dev --force-with-lease=dev:$DEV_SHA
+
+      - name: Realign origin/dev-backup with origin/main
+        run: |
+          BACKUP_SHA=$(git rev-parse origin/dev-backup)
+          git push origin main:dev-backup --force-with-lease=dev-backup:$BACKUP_SHA

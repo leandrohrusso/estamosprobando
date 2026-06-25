@@ -1,0 +1,88 @@
+# =====================================================================
+# .gitignore template universal del pack workflow-base
+# =====================================================================
+# Adaptar al stack del proyecto sumando entradas específicas (Vite cache ·
+# Rails tmp · Django __pycache__ · etc).
+# =====================================================================
+
+# Node.js / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Environment files (NUNCA commitear secrets)
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+
+# Test outputs
+test-results/
+playwright-report/
+coverage/
+.nyc_output/
+
+# QA / linting reports
+.qa-reports/
+.eslintcache
+.stylelintcache
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# WSL2 (Windows Subsystem for Linux) · metadata generada al copiar archivos desde Windows host
+# Aparece como `<filename>:Zone.Identifier` adyacente a cada archivo importado · cero info útil para el repo.
+*:Zone.Identifier
+
+# Local config del agente (NO commitear · solo del usuario local)
+.claude/local/
+.claude/settings.local.json
+
+# Workspace gitignored del agente · WIP del template (handoffs · drafts · scratchpads · outputs efímeros)
+# Solo se commitea el README.md que documenta la convención · todo lo demás es efímero local.
+# Ver .claude/_workspace/README.md para detalle.
+.claude/_workspace/*
+!.claude/_workspace/README.md
+
+# Credenciales gitignored (NO commitear · ver .claude/memory/reference/<test-credentials>.md)
+tests/manual/.credentials.local.json
+tests/manual/*.local.json
+
+# Logs internos del proyecto
+*.log
+.git/post-commit-backup.log
+
+# Outputs runtime de los hooks del agente Claude Code (ver .claude/logs/README.md)
+# La carpeta la crea el hook al primer run · NUNCA commitear su contenido.
+# Patrón con /* (no /) para que la excepción del README sea evaluable por git.
+.claude/logs/*
+# Excepción: el README explica el rol de la carpeta · debe estar tracked.
+!.claude/logs/README.md
+
+# Temp / cache
+tmp/
+.cache/
+.turbo/
+.vercel/
