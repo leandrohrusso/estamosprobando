@@ -1,6 +1,6 @@
-# PROYECTO ACTIVO: `<PROYECTO>`
+# PROYECTO ACTIVO: `PUERTITA`
 
-> Reemplazar `<PROYECTO>` con el nombre del producto · sumar 1-2 líneas con el one-liner del producto (qué es · para quién).
+> **PUERTITA** — SaaS multitenant de ticketing para eventos (B2B2C). Cada organización publica eventos, vende entradas con cobro directo a su cuenta y valida el ingreso por QR desde el celular · sin sobreventa y sin depender del equipo de la plataforma.
 >
 > **Estado actual del proyecto:** ver [`.claude/memory/log.md`](.claude/memory/log.md) § últimas entradas (`grep "^## \[" .claude/memory/log.md | tail -5`) para cierres de PRPs · decisiones · directional · milestones recientes. Identidad y resumen completo del producto: [BUSINESS_LOGIC.md](BUSINESS_LOGIC.md).
 

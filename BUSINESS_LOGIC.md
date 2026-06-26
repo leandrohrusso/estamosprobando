@@ -1,251 +1,132 @@
-# BUSINESS_LOGIC del proyecto · identidad y constraints no negociables
+# BUSINESS_LOGIC de PUERTITA · identidad y constraints no negociables
 
-<!--
-INSTRUCCIONES PARA EL DEV QUE COPIA EL PACK:
-
-Este archivo es la fuente única de verdad sobre QUÉ se construye (vs WORKFLOW.md = CÓMO).
-Llenarlo es el paso #1 obligatorio del bootstrap del proyecto nuevo, ANTES de arrancar
-cualquier PRP. El skill `/arrancar` lo lee en cada boot · si está vacío, el agente NO
-tiene cómo enmarcar las decisiones del producto.
-
-Recomendación: llenar la § 1 (Identidad) + § 7 (Stack) + § 8 (Constraints) primero ·
-las otras secciones pueden completarse iterativamente conforme avanza el producto.
--->
+> **Fuente única de verdad sobre QUÉ se construye** (vs `WORKFLOW.md` = CÓMO). Derivado del PRD v1.0 ([`docs/product/references/PRD.md`](docs/product/references/PRD.md)) durante el bootstrap. El skill `/arrancar` lo lee en cada boot para enmarcar las decisiones del producto.
 
 ## § 1 · Identidad del producto
 
-<!--
-Llenar acá:
-- Nombre del producto.
-- Dominio (si tenés URL · si todavía no, dejar "pendiente").
-- One-liner (1 frase que describe qué es · estilo elevator pitch · ej: "SaaS de ticketing
-  boutique para productores boutique argentinos · recaudación directa al banco del productor").
-- Founder · equipo · roles (quién/quiénes construyen).
-- Magic moment del producto (la primera vez que el usuario primary siente el valor · ej:
-  "cuando el productor ve su primera venta entrar a su Mercadopago en tiempo real").
--->
+**Nombre:** PUERTITA
 
-**Nombre:** `<PROYECTO>`
+**Dominio:** `pendiente`
 
-**Dominio:** `<dominio.tld>` (o `pendiente`)
+**One-liner:** SaaS multitenant de ticketing para eventos (B2B2C) · cada organización publica eventos, vende entradas online con cobro directo a su cuenta y valida el ingreso por QR desde el celular · sin sobreventa y sin depender del equipo de la plataforma.
 
-**One-liner:** `<1 frase elevator pitch>`
+**Founder / equipo:** `pendiente de definir` (operación inicial vía `boleterialive@gmail.com`).
 
-**Founder / equipo:** `<roles>`
-
-**Magic moment:** `<primer momento donde el usuario primary siente el valor>`
+**Magic moment:** un organizador nuevo va de cero a evento publicado + primera venta + check-in en la puerta el día del evento, de forma autónoma, sin soporte de la plataforma y sin un solo caso de sobreventa.
 
 ## § 2 · Problema + costo
 
-<!--
-El dolor que resuelve el producto. NO descripción genérica del rubro · el dolor SPECIFIC
-del usuario que justifica que prefiera tu producto sobre los existentes. El costo es lo
-que el usuario pierde HOY por no tener tu solución (tiempo · dinero · oportunidad · etc).
--->
+**Dolor primario:** los organizadores de eventos pequeños y medianos necesitan publicar, vender y validar entradas sin depender de plataformas caras, rígidas o que retienen el dinero. Hoy lo resuelven con planillas, links de pago sueltos y validación manual en la puerta.
 
-**Dolor primario:** `<descripción concreta del problema>`
-
-**Costo del status quo:** `<qué pierde el usuario sin tu solución>`
+**Costo del status quo:** sobreventa, errores de caja, mala experiencia del comprador y del staff, y dinero retenido por intermediarios.
 
 ## § 3 · Solución + flujo
 
-<!--
-Happy path del usuario primary · qué hace en tu producto desde que descubre hasta que
-captura valor. NO descripción de features sueltas · el flujo end-to-end del usuario
-primary que justifica el magic moment de § 1.
--->
+**Happy path del usuario primario (organizador):**
 
-**Happy path del usuario primario:**
-
-1. `<paso 1>`
-2. `<paso 2>`
-3. `<paso 3>`
-4. ...
+1. Se registra (magic link) y crea su organización.
+2. Crea un evento en borrador (fecha, ubicación, capacidad) + define tipos de entrada con cupo propio.
+3. Conecta su cuenta de cobro (Mercadopago/Mobbex) y publica el evento.
+4. Comparte la URL pública; los compradores hacen guest checkout (nombre + email) con hold de stock ~10 min y pagan.
+5. El sistema emite un ticket con QR firmado por cada entrada y lo envía por email tras confirmar el pago.
+6. El día del evento, el staff valida los QR desde el celular (PWA · atómico/idempotente · con modo offline).
+7. El organizador ve ventas, ingresos y % de check-in en tiempo real, y exporta reportes (CSV/PDF).
 
 ## § 4 · Usuario objetivo
 
-<!--
-- Persona primaria: quién toca tu producto día-a-día · su rol · su nivel técnico.
-- Personas operativas: roles secundarios (admin · finance · ops · staff · etc) que
-  interactúan con superficies del producto pero NO son la persona primaria.
-- Anti-persona: para quién explícitamente NO está construido el producto (evita scope creep).
--->
+**Persona primaria:** organizador de eventos pequeños/medianos (Org Owner/Admin) · perfil no técnico · quiere publicar, vender y cobrar sin fricción.
 
-**Persona primaria:** `<descripción>`
+**Personas operativas:** Org Staff (check-in en la puerta) · Platform Superadmin (gestión de tenants y salud del sistema · no opera eventos) · Comprador/Asistente (guest checkout, recibe tickets por email).
 
-**Personas operativas:** `<lista de roles secundarios>`
-
-**Anti-persona:** `<para quién NO está construido el producto>`
+**Anti-persona:** clientes enterprise con exigencias de compliance que requieran aislamiento schema/DB-per-tenant, asientos numerados o dominios propios (fuera de v1).
 
 ## § 5 · Modelo de negocio
 
-<!--
-Cómo monetiza el producto. Si SaaS = pricing tiers · si marketplace = comisiones ·
-si transaccional = fee por transacción · etc. Métricas clave del modelo (ARR · LTV ·
-CAC · etc) si ya están definidas.
--->
+**Modelo:** marketplace transaccional · cobro directo al organizador con split (destination charge) · la plataforma NO es custodia del dinero ajeno.
 
-**Modelo:** `<SaaS suscripción · marketplace comisión · transaccional fee · híbrido>`
+**Pricing / fees:** comisión por ticket (porcentaje + fijo), configurable por organización (`organizations.fee_pct` + `fee_fixed`).
 
-**Pricing / fees:** `<estructura>`
-
-**Métricas clave:** `<ARR · LTV · CAC · etc si aplica>`
+**Métricas clave:** GMV por organización · comisión neta de la plataforma · targets formales `pendientes de definir`.
 
 ## § 6 · KPIs de éxito
 
-<!--
-Cómo sabés si el producto funciona. NO vanity metrics (signups · followers · etc) ·
-métricas que indican que el magic moment se está entregando consistentemente y que
-el modelo de negocio se sostiene.
--->
+**KPI #1 (norte estrella):** tasa de sobreventa = **0** (cualquier caso es bug crítico) + onboarding autónomo (organizador llega a su primer evento publicado sin soporte).
 
-**KPI #1 (norte estrella):** `<la métrica única que indica que el producto funciona>`
-
-**KPIs operativos:** `<2-4 métricas que indican que la operación se sostiene>`
+**KPIs operativos:** tiempo de creación de un evento (< 5 min) · tasa de conversión de checkout (vista de evento → compra completada) · tickets validados sin incidencias (escaneos exitosos / total).
 
 ## § 7 · Stack confirmado
 
-<!--
-Stack técnico no negociable del proyecto. Lo que ya está decidido y NO se discute en
-cada PRP (cambiar el stack es trabajo de migración estructural, no scope de PRP).
--->
+**Frontend:** Next.js (App Router) + Tailwind + shadcn/ui.
 
-**Frontend:** `<ej: Next.js 16 App Router + Tailwind + shadcn>`
+**Backend:** Server Actions (mutaciones desde el frontend · resuelven `organization_id` desde la sesión, nunca de input del cliente) + Supabase Edge Functions (webhooks de pago, generación de PDF, emails vía Resend, tareas con secretos).
 
-**Backend:** `<ej: Server Actions Next + Supabase Edge Functions cuando aplica>`
+**Base de datos:** Supabase Postgres + RLS por `organization_id` en TODAS las tablas de negocio.
 
-**Base de datos:** `<ej: Supabase Postgres + RLS por organization_id>`
+**Auth:** Supabase Auth · magic link (sin contraseñas) para organizadores y staff · memberships (un usuario puede pertenecer a varias organizaciones con distinto rol) · los compradores NO usan Auth.
 
-**Auth:** `<ej: Supabase Auth + magic link + organization memberships>`
+**Pagos / providers externos:** Mercadopago (principal · LatAm) + Mobbex (alternativa/segundo proveedor) + Resend (emails transaccionales con PDF adjunto).
 
-**Pagos / providers externos:** `<ej: Mercadopago + Mobbex + Resend para emails>`
+**Hosting:** Vercel + Supabase Cloud.
 
-**Hosting:** `<ej: Vercel + Supabase Cloud>`
-
-**Tooling:** `<ej: Husky + lint-staged + Playwright + Vitest + GitHub Actions>`
+**Tooling:** Husky + lint-staged + Playwright (E2E) + Vitest (unit) + GitHub Actions (CI).
 
 ## § 8 · Constraints no negociables
 
-<!--
-LAS DECISIONES CRÍTICAS DEL PRODUCTO que enmarcan cada PRP futuro. NO se discuten en
-cada PRP · están firmadas y son inmutables hasta que el founder explícitamente
-decida revisarlas (en cuyo caso se actualiza este archivo + entrada `directional`
-en `.claude/memory/log.md`).
+> Decisiones críticas del producto que enmarcan cada PRP futuro · firmadas e inmutables hasta que el founder explícitamente las revise (con actualización de este archivo + entrada `directional` en `.claude/memory/log.md`).
 
-Patrón canónico:
+1. **Multi-tenant · aislamiento estricto por RLS.** Cada organización ve SOLO sus datos · RLS por `organization_id` en todas las tablas de negocio · el `organization_id` se deriva SIEMPRE de la sesión/membership, nunca de input del cliente. **Por qué firme:** una fuga cross-tenant es game-over legal + de confianza.
 
-1. **<Nombre corto del constraint>** — <enunciado del constraint · 1-2 líneas>.
-   **Por qué firme:** <razón · contexto · cita del founder si aplica>.
+2. **Stock atómico · cero sobreventa.** El decremento de cupo es atómico (lock de fila / contador en Postgres) dentro de la transacción de hold/compra · sobreventa = bug crítico (objetivo: 0). **Por qué firme:** la sobreventa destruye el trust del organizador y compromete la capacidad real.
 
-> [!EXAMPLE]
-> Los 3 ejemplos siguientes son **ilustrativos** (escenario en dominio ticketing · adaptá a
-> tu dominio · borrá estos al llenar los reales del producto).
+3. **Check-in atómico e idempotente.** El primer escaneo marca el ticket `used` en una sola operación · escaneos siguientes devuelven "ya validado" · sin doble uso ni con dos operadores simultáneos. **Por qué firme:** el doble ingreso es fraude/error operativo en la puerta.
 
-1. **Multi-tenant aislamiento estricto.** Cada tenant ve SOLO sus datos · RLS por
-   `organization_id` en TODAS las tablas · cero excepciones.
-   **Por qué firme:** legal + confianza · una fuga cross-tenant es game-over.
+4. **Guest checkout sin cuenta.** El comprador NO usa Auth · guest checkout con nombre + email. **Por qué firme:** exigir registro reduce la conversión · es el estándar del rubro.
 
-2. **Stock fundamental · cero sobreventa.** El stock se decrementa atómicamente vía
-   RPC SQL con `UPDATE ... WHERE stock >= qty` · cero race conditions tolerable.
-   **Por qué firme:** sobreventa es default-fail · destruye trust.
+5. **Pagos split · cobro directo al organizador.** El dinero va directo a la cuenta de cobro del organizador (MP/Mobbex) · la plataforma retiene su comisión automáticamente · NO es custodia del dinero ajeno. **Por qué firme:** evita problemas regulatorios y de flujo de caja.
 
-3. **Snapshot histórico en renders post-venta.** PDFs · scanner · endpoint público
-   leen `<tabla>.snapshot`, NO live tables · si el tenant editor (ej: en un proyecto
-   ticketing sería "el productor") renombra X post-venta, el comprador ve lo que compró.
-   **Por qué firme:** trazabilidad legal + UX del comprador.
+6. **Emisión de tickets SOLO tras pago confirmado por webhook.** La confirmación se procesa vía webhook (Edge Function) con idempotency keys, no por el redirect del navegador · los tickets se emiten solo tras confirmación efectiva. **Por qué firme:** el redirect no es confiable y los webhooks pueden llegar duplicados.
 
-Listar acá los constraints del producto · 5-15 entries típicamente · cada uno firmado.
--->
+7. **QR firmado · no enumerable.** `tickets.qr_signature` firmado (HMAC/JWT) · no falsificable ni adivinable por enumeración. **Por qué firme:** seguridad anti-fraude del ticket.
 
-1. **`<Nombre del constraint #1>`** — `<enunciado>`. **Por qué firme:** `<razón>`.
+8. **Hold temporal libera stock Y código juntos.** El hold (~10 min) reserva stock + uso de código promocional · si el carrito se abandona, ambos se liberan automáticamente · no se "queman" códigos por carritos abandonados. **Por qué firme:** UX del comprador + integridad de cupos y promos.
 
-2. **`<Nombre del constraint #2>`** — `<enunciado>`. **Por qué firme:** `<razón>`.
+9. **Un (1) código promocional por compra · no combinable.** **Por qué firme:** evita convertir el sistema en un motor de reglas (otra escala de complejidad · scope freeze del MVP).
 
-3. ...
+10. **Secretos solo en servidor / Edge Functions.** Webhooks, generación de PDF, emails y secrets viven en Edge Functions/servidor, nunca en el cliente. **Por qué firme:** seguridad.
+
+11. **Audit log de acciones sensibles.** Quién publicó/canceló un evento, quién reembolsó, quién validó un ticket. **Por qué firme:** trazabilidad legal y operativa.
+
+12. **Scope congelado de promos y reportes (anti scope-creep).** Los límites del PRD §6.3 (descuentos) y §7.4 (reportes) están congelados · cualquier extensión va a un v2 explícito. **Por qué firme:** mantener el MVP acotado.
 
 ### Constraints del dominio que activan sub-agentes de `/revisar` y `/revisar-main`
 
-> Declarar aquí los constraints del dominio que activan los 3 sub-agentes
-> domain-tight de `/revisar` y `/revisar-main`. Los flags alimentan
-> [`.claude/config/agents-applicability.yml`](.claude/config/agents-applicability.yml).
-> El bootstrap del proyecto destino debe cambiar cada `unknown` a `yes` o `no`
-> explícito · cero defaults silenciosos. Doctrina del mecanismo: regla firme #35
-> [`agents-conditional-by-domain.md`](.claude/rules/agents-conditional-by-domain.md).
+> Flags que activan los 3 sub-agentes domain-tight · alimentan [`.claude/config/agents-applicability.yml`](.claude/config/agents-applicability.yml) (mapeo 1:1 · `multi_tenant` → `multi-tenant.enabled` · `stock_atomicity` → `atomicity.enabled` · `relational_db_with_migrations` → `migration-safety.enabled`). Doctrina: regla firme #35 [`agents-conditional-by-domain.md`](.claude/rules/agents-conditional-by-domain.md).
 
-- **`multi_tenant`:** ¿el proyecto es SaaS multi-tenant con aislamiento entre
-  tenants (RLS por `organization_id` o equivalente)?
-  - `yes` → activa agente `multi-tenant` de `/revisar` y `/revisar-main`.
-  - `no` → desactiva.
-
-- **`stock_atomicity`:** ¿el proyecto maneja stock · contadores · race conditions
-  sobre BD compartida que requieren RPCs SQL atómicas?
-  - `yes` → activa agente `atomicity`.
-  - `no` → desactiva.
-
-- **`relational_db_with_migrations`:** ¿el proyecto tiene BD relacional con
-  migrations + RLS policies (Postgres/Supabase/MySQL/etc)?
-  - `yes` → activa agente `migration-safety`.
-  - `no` → desactiva.
-
-> **Nota sobre naming · mapeo flags ↔ YAML:** los flags se nombran largo en
-> esta sección (naming declarativo del dominio · `multi_tenant` ·
-> `stock_atomicity` · `relational_db_with_migrations`) y corto en
-> [`.claude/config/agents-applicability.yml`](.claude/config/agents-applicability.yml)
-> (naming operativo del agente · `multi-tenant` · `atomicity` · `migration-safety`).
-> Mapeo 1:1 · cada flag de esta sección activa exactamente un sub-key del YAML:
-> `multi_tenant` → `multi-tenant.enabled` · `stock_atomicity` → `atomicity.enabled` ·
-> `relational_db_with_migrations` → `migration-safety.enabled`.
-
-> **Bootstrap operativo:** al adoptar el pack, el dev del proyecto destino:
->
-> 1. Lee esta sección + decide cada flag según el producto que está construyendo.
-> 2. Edita [`.claude/config/agents-applicability.yml`](.claude/config/agents-applicability.yml) reemplazando `unknown` por
->    `yes`/`no` en cada agente.
-> 3. Documenta la decisión inline acá con justificación 1-frase en la tabla siguiente.
-
-**Decisiones del proyecto** (llenar en el bootstrap):
+**Decisiones del proyecto:**
 
 | Flag | Valor | Justificación 1-frase |
 |---|---|---|
-| `multi_tenant` | `<unknown / yes / no>` | `<por qué>` |
-| `stock_atomicity` | `<unknown / yes / no>` | `<por qué>` |
-| `relational_db_with_migrations` | `<unknown / yes / no>` | `<por qué>` |
+| `multi_tenant` | `yes` | SaaS multi-tenant pooled + RLS por `organization_id` en todas las tablas de negocio (PRD §3). |
+| `stock_atomicity` | `yes` | Anti-overselling con decremento atómico de cupo · "sobreventa = bug crítico" (PRD §5.4). |
+| `relational_db_with_migrations` | `yes` | Supabase Postgres + migraciones + RLS policies (PRD §2). |
 
 ## § 9 · Mapa de documentación
 
-<!--
-Pointer a los archivos clave del proyecto que el agente debe consultar cuando arranca
-un PRP del área correspondiente. NO listar TODOS los archivos · solo los SoT por área.
-
-Patrón:
-
 | Área | SoT | Cuándo consultar |
 |---|---|---|
-| Schema BD | `docs/db/schema.md` | Al planificar PRP que toca tablas/columnas |
-| Auth + roles | `docs/auth/roles.md` | Al planificar PRP que toca permisos |
-| Vocabulario del rubro | `docs/product/references/rules/vocabulario.md` | Al revisar copy de UI o naming técnico |
-| Decisiones arquitectónicas históricas | `.claude/memory/project/` | Multi-sesión continuity |
--->
-
-| Área | SoT | Cuándo consultar |
-|---|---|---|
-| _(vacío al boot · llenar conforme aparezcan SoTs por área del producto)_ | — | — |
+| Identidad + constraints del producto | este archivo (`BUSINESS_LOGIC.md`) | Al planificar cualquier PRP |
+| PRD v1 (fuente del bootstrap) | [`docs/product/references/PRD.md`](docs/product/references/PRD.md) | Al planificar features del MVP · modelo de datos orientativo (§13) · user stories Gherkin (§12) |
+| Roadmap operativo | [`docs/product/product-roadmap.md`](docs/product/product-roadmap.md) | Al elegir la próxima task |
+| Decisiones arquitectónicas históricas | [`.claude/memory/project/`](.claude/memory/project/) | Continuidad multi-sesión |
 
 ---
 
-<!--
-TIP PARA SESIONES FUTURAS:
-
-- Al cerrar un PRP que cambia un constraint de § 8, actualizar este archivo + entrada
-  `directional` en `.claude/memory/log.md`.
-- Al sumar área de documentación nueva, sumar fila en § 9.
-- Si el founder firma cambio del stack (§ 7), actualizar acá + entrada `directional`
-  en `log.md` + verificar que los skills heavy-MCP del pack (`/implementar` · `/validar`)
-  sigan teniendo allowed-tools válidos.
-- Cero "documentar en el próximo PRP" — este archivo se actualiza en el commit que
-  introduce el cambio (regla #18 [`golden-rule-docs-memory.md`](.claude/rules/golden-rule-docs-memory.md)).
--->
+> **Tips para sesiones futuras:**
+>
+> - Al cerrar un PRP que cambia un constraint de § 8, actualizar este archivo + entrada `directional` en `.claude/memory/log.md` (regla #18 [`golden-rule-docs-memory.md`](.claude/rules/golden-rule-docs-memory.md)).
+> - Al sumar área de documentación nueva, sumar fila en § 9.
+> - Si el founder firma cambio del stack (§ 7), actualizar acá + entrada `directional` en `log.md` + verificar que los skills heavy-MCP (`/implementar` · `/validar`) sigan teniendo allowed-tools válidos.
 
 ---
 
-_Documento canónico de identidad/business logic del producto · template del pack workflow-base · convención firmada 2026-05-22 · vacío al boot · llenar durante el bootstrap del proyecto destino._
+_Documento canónico de identidad/business logic de PUERTITA · derivado del PRD v1.0 (`docs/product/references/PRD.md`) durante el bootstrap del 2026-06-25._

@@ -6,10 +6,10 @@
 
 | Deadline | Próxima ejecución | Cadencia | Comando ejecutable |
 |---|---|---|---|
-| Lint mensual de **memoria** | TODO · setear fecha primer run | Mensual | `bash scripts/lint-memory.sh` |
-| Lint mensual de **código** (`/revisar-main`) | TODO · setear fecha primer run | Mensual + ad-hoc | `/revisar-main` (skill) |
-| Audit mensual de **deudas técnicas** (`/auditar-dt`) | TODO · setear fecha primer run | Mensual + ad-hoc | `/auditar-dt` (skill) |
-| Archivado periódico de **log.md** | TODO · setear cuando log crezca | Cada 14 días | `bash scripts/archive-log.sh` |
+| Lint mensual de **memoria** | 2026-07-25 | Mensual | `bash scripts/lint-memory.sh` |
+| Lint mensual de **código** (`/revisar-main`) | 2026-07-25 | Mensual + ad-hoc | `/revisar-main` (skill) |
+| Audit mensual de **deudas técnicas** (`/auditar-dt`) | 2026-07-25 | Mensual + ad-hoc | `/auditar-dt` (skill) |
+| Archivado periódico de **log.md** | Cuando `log.md` supere ~40 entries | Cada 14 días | `bash scripts/archive-log.sh` |
 
 ## § Histórico
 

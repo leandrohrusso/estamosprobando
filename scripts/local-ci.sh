@@ -130,12 +130,10 @@ run_job() {
 # ─────────────────────────────────────────────────────────────────────
 
 if should_run typecheck; then
-  # TODO: reemplazar con comando de typecheck del proyecto · ej: tsc --noEmit
   run_job typecheck npm run typecheck
 fi
 
 if should_run lint; then
-  # TODO: reemplazar con comando de lint del proyecto · ej: eslint .
   run_job lint npm run lint
   # Smokes infra-flujo · invariantes firmes (ABORT en fallo) · paridad con
   # job `lint` de .github/workflows/ci.yml (regla #27 push-and-ci-policy +
@@ -151,13 +149,10 @@ if should_run lint; then
 fi
 
 if should_run build; then
-  # TODO: reemplazar con comando de build del proyecto · ej: next build
   run_job build npm run build
 fi
 
 if should_run unit; then
-  # TODO: reemplazar con comando de unit tests · ej: vitest run
-  # Si el stack no tiene unit tests separados de e2e, sumar EXCLUDE+="unit"
   run_job unit npm run test:unit
 fi
 
@@ -174,19 +169,11 @@ if should_run e2e; then
   # dropeó/alteró schema y no restauró). ABORT con mensaje específico por
   # categoría · evita cascada de minutos de e2e fail sin pista de root cause.
   bash tests/scripts/infra-flujo/state-assertion.sh
-  # TODO: reemplazar con comando de E2E · ej: playwright test
-  # Pre-condición: dev server + TEST DB seedeada (ver doc del proyecto).
+  # Pre-condición: dev server + TEST DB seedeada (se cablea en el PRP de scaffold/CI).
   run_job e2e npm run test:e2e
 fi
 
-# TODO: reemplazar con comando de tests SQL contra TEST DB del proyecto.
-#
-# Si el stack NO tiene BD, eliminar el bloque sql abajo Y remover "sql" del
-# array ALL_JOBS de la línea 53. Ejemplo de stack sin BD:
-#
-#   ALL_JOBS=(typecheck lint build unit e2e)   # sin "sql"
-#   # ...sin el bloque `if should_run sql; then ... fi` abajo.
-#
+# Tests SQL contra la TEST DB (Supabase Postgres · stack con BD relacional).
 if should_run sql; then
   # Assertion pre-sql · detecta drift de state vs baseline (spec previo que
   # dropeó/alteró schema y no restauró). Mismo baseline consumido por ambos

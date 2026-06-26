@@ -39,16 +39,16 @@
 
 agents:
   multi-tenant:
-    enabled: unknown
+    enabled: yes
     condition: "Proyecto declara multi_tenant: yes en BUSINESS_LOGIC.md § 8 Constraints"
     description: "SaaS multi-tenant con aislamiento entre tenants (RLS por organization_id o equivalente)"
 
   atomicity:
-    enabled: unknown
+    enabled: yes
     condition: "Proyecto declara stock_atomicity: yes en BUSINESS_LOGIC.md § 8 Constraints"
     description: "Maneja stock · contadores · race conditions sobre BD compartida que requieren RPCs SQL atómicas"
 
   migration-safety:
-    enabled: unknown
+    enabled: yes
     condition: "Proyecto declara relational_db_with_migrations: yes en BUSINESS_LOGIC.md § 8 Constraints"
     description: "BD relacional con migrations + RLS policies (Postgres/Supabase/MySQL/etc)"
