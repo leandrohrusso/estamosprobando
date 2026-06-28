@@ -7,14 +7,20 @@ metadata:
 
 # PRP-001 · checkpoint (paso 3 · /implementar)
 
-> **Última actualización:** 2026-06-26 · Fase 1 cerrada.
+> **Última actualización:** 2026-06-26 · Fase 2 cerrada.
 
 ## Estado de fases
 
-- [x] **Fase 1 · Deps reales + scaffold mínimo** — cerrada. Commit `<ver git log>`.
-- [ ] **Fase 2 · Cliente Supabase skeleton + env** — próxima.
-- [ ] **Fase 3 · Tests del DoD + wiring CI** — pendiente.
+- [x] **Fase 1 · Deps reales + scaffold mínimo** — cerrada. Commit `6f79437`.
+- [x] **Fase 2 · Cliente Supabase skeleton + env** — cerrada.
+- [ ] **Fase 3 · Tests del DoD + wiring CI** — próxima.
 - [ ] **Fase 4 · Validación final** — pendiente.
+
+## Qué se hizo en Fase 2
+
+- `src/lib/supabase/client.ts` (`createBrowserClient`) + `src/lib/supabase/server.ts` (`createServerClient` con cookies async de Next 16) · API verificada contra @supabase/ssr@0.12 instalado (getAll/setAll · cookies() Promise).
+- `.env.example` con `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` (+ comentados service-role + TEST_DATABASE_URL para TASK-002).
+- Skeleton sin caller real todavía (Auth/RLS/organization_id → TASK-002). DoD: typecheck ✓ build ✓.
 
 ## Qué se hizo en Fase 1
 
