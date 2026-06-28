@@ -4,6 +4,7 @@
   "description": "SaaS multitenant de ticketing para eventos · publicar, vender y validar entradas con cobro directo al organizador",
   "private": true,
   "scripts": {
+    "dev": "next dev",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "build": "next build",
@@ -13,9 +14,34 @@
     "ci:local": "bash scripts/local-ci.sh",
     "prepare": "husky"
   },
-  "devDependencies": {
-    "husky": "^9.0.0",
-    "lint-staged": "^15.0.0"
+  "lint-staged": {
+    "*.{ts,tsx}": "eslint --fix"
   },
-  "dependencies": {}
+  "dependencies": {
+    "next": "^16.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "@supabase/supabase-js": "^2.108.2",
+    "@supabase/ssr": "^0.12.0"
+  },
+  "devDependencies": {
+    "@next/eslint-plugin-next": "^16.2.9",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.5.2",
+    "eslint": "^9.39.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.7.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.0",
+    "vitest": "^4.1.9"
+  }
 }
