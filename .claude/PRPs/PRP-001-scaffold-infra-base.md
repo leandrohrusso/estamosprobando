@@ -1,6 +1,6 @@
 # PRP-001 · Scaffold + infra base (Next.js + Tailwind + shadcn/ui + cliente Supabase + wiring CI)
 
-> **Estado**: EN PROGRESO (paso 5 SKIP firmado · 6 pendiente)
+> **Estado**: COMPLETADO
 > **Fecha**: 2026-06-26
 > **Proyecto**: PUERTITA
 > **Tipo**: feature producto (scaffold fundacional)
@@ -16,7 +16,7 @@
 > 3. ☑ `/implementar` (4/4 fases)
 > 4. ☑ `/revisar-simple` (0 critical · 0 normal · 1 nit fixeado · override B scaffold)
 > 5. ⊘ `/validar` SKIP firmado (scaffold sin superficie validable · Bif 1=A)
-> 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
+> 6. ☑ `/entregar` · PR #1 mergeado `--squash` a `main` (`e4a9036`) · CI remoto 1 run verde · sync-dev OK
 
 ---
 

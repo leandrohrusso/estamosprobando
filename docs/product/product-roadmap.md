@@ -6,7 +6,7 @@
 
 ## § Fase actual · Fundación
 
-- [ ] **TASK-001 · Scaffold + infra base** — Next.js App Router + Tailwind + shadcn/ui + cliente Supabase + config TS/ESLint/Vitest/Playwright + wiring real del CI (deps, Playwright browsers, secrets, TEST DB). _Cierra los pendientes de `ci.yml`/`local-ci.sh` que el bootstrap dejó anotados._ → **[PRP-001](../../.claude/PRPs/PRP-001-scaffold-infra-base.md) APROBADO 2026-06-26.** Scope acotado por 🔵 Bif 1=A: TEST DB real + specs e2e/sql con datos → TASK-002.
+- [x] **TASK-001 · Scaffold + infra base** — Next.js App Router + Tailwind + shadcn/ui + cliente Supabase + config TS/ESLint/Vitest/Playwright + wiring real del CI. → **[PRP-001](../../.claude/PRPs/PRP-001-scaffold-infra-base.md) COMPLETADO 2026-06-26** (mergeado `--squash` a `main` · `e4a9036` · CI remoto verde). Entregó: deps reales (Next 16 · React 19 · Tailwind v3 · eslint 9 · TS 6) + `src/app` scaffold + cliente Supabase skeleton + wiring CI (Playwright `--with-deps` · `run-sql-tests` skip-safe) + smokes e2e/unit. **Scope acotado 🔵 Bif 1=A:** TEST DB real + auth/RLS + specs con datos → TASK-002. **DT-001** abierta (var `DATABASE_URL` vs `TEST_DATABASE_URL`).
 - [ ] **TASK-002 · Auth + organizaciones + memberships + RLS base** — Supabase Auth (magic link), tablas `organizations` + `memberships`, RLS por `organization_id`, selección de organización, RBAC (Owner/Admin/Staff). _Base del aislamiento multi-tenant (constraint #1)._
 
 ## § Próxima fase · Eventos y entradas
