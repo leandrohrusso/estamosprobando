@@ -7,14 +7,18 @@ metadata:
 
 # PRP-001 · checkpoint (paso 3 · /implementar)
 
-> **Última actualización:** 2026-06-26 · Fase 3 cerrada.
+> **Última actualización:** 2026-06-26 · Fase 4 cerrada · **paso 3 completo**. PRP → EN PROGRESO (4+5+6 pendientes).
 
 ## Estado de fases
 
 - [x] **Fase 1 · Deps reales + scaffold mínimo** — cerrada. Commit `6f79437`.
 - [x] **Fase 2 · Cliente Supabase skeleton + env** — cerrada. Commit `e1c5059`.
-- [x] **Fase 3 · Tests del DoD + wiring CI** — cerrada.
-- [ ] **Fase 4 · Validación final** — próxima (`npm run ci:local`).
+- [x] **Fase 3 · Tests del DoD + wiring CI** — cerrada. Commit `bf4151f`.
+- [x] **Fase 4 · Validación final** — cerrada. `npm run ci:local` VERDE (6/6 jobs · e2e ✓ · sql skip-safe).
+
+## Próximo paso del flujo
+
+Paso 4 `/revisar` (multi-agent review del diff). Diff acotado (scaffold · ~15 archivos · sin dominios domain-tight tocados) → evaluar `/revisar-simple` vs `/revisar`.
 
 ## Qué se hizo en Fase 3
 

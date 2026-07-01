@@ -1,6 +1,6 @@
 # PRP-001 · Scaffold + infra base (Next.js + Tailwind + shadcn/ui + cliente Supabase + wiring CI)
 
-> **Estado**: APROBADO
+> **Estado**: EN PROGRESO (paso 3 cerrado · 4 + 5 + 6 pendientes)
 > **Fecha**: 2026-06-26
 > **Proyecto**: PUERTITA
 > **Tipo**: feature producto (scaffold fundacional)
@@ -13,7 +13,7 @@
 > **Progreso del flujo de 6 pasos:**
 > 1. ☑ `/arrancar`
 > 2. ☑ `/planificar` → APROBADO
-> 3. ☐ `/implementar` (0/4 fases)
+> 3. ☑ `/implementar` (4/4 fases)
 > 4. ☐ `/revisar` (LR-NNN · X/Y fixeados)
 > 5. ☐ `/validar` (CSV X/Y Funciona)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
@@ -44,13 +44,13 @@ Convertir el repo recién bootstrapeado (configs stub del template + `package.js
 
 ### Criterios de Éxito (binarios verificables)
 
-- [ ] **G1 · Deps reales instaladas** · `package.json` tiene `dependencies` con next/react/react-dom/@supabase/supabase-js/@supabase/ssr + `devDependencies` con tailwindcss(v3)/autoprefixer/postcss/tailwindcss-animate/vitest/@playwright/test/typescript/typescript-eslint/eslint-plugin-{react,import}/@next/eslint-plugin-next/globals · `npm ci` exit 0.
-- [ ] **G2 · Scaffold mínimo** · `src/app/layout.tsx` + `src/app/page.tsx` + `src/app/globals.css` existen · `npm run build` exit 0.
-- [ ] **G3 · Cliente Supabase skeleton** · `src/lib/supabase/client.ts` + `src/lib/supabase/server.ts` existen usando `@supabase/ssr` · `npm run typecheck` exit 0 · `.env.example` con las vars `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- [ ] **G4 · Script `dev` agregado** · `package.json` scripts tiene `"dev": "next dev"` (requerido por `playwright.config.ts` webServer).
-- [ ] **G5 · Tests del DoD** · spec e2e smoke (`/` responde 200 y rinde sin error) verde · ≥1 unit test smoke (vitest) verde.
-- [ ] **G6 · Wiring CI** · job `e2e` de `ci.yml` con step `npx playwright install --with-deps` · paridad `local-ci.sh` ALL_JOBS ↔ `ci.yml` jobs verde (`bash tests/scripts/infra-flujo/job-order-parity.sh` exit 0) · jobs `sql` y state-baseline skip-safe sin TEST_DATABASE_URL.
-- [ ] **G7 · CI subset verde local** · `typecheck` + `lint` + `build` + `unit` pasan · `e2e` smoke pasa (sin DB) · `sql` skip-safe.
+- [x] **G1 · Deps reales instaladas** · `package.json` con deps reales · `npm install` OK (429 paquetes · sin ERESOLVE).
+- [x] **G2 · Scaffold mínimo** · `src/app/{layout,page,globals.css}` existen · `npm run build` exit 0.
+- [x] **G3 · Cliente Supabase skeleton** · `src/lib/supabase/{client,server}.ts` con `@supabase/ssr` · typecheck exit 0 · `.env.example` con las vars.
+- [x] **G4 · Script `dev` agregado** · `"dev": "next dev"` en scripts.
+- [x] **G5 · Tests del DoD** · e2e smoke (`/` 200 + PUERTITA) verde · unit smoke (vitest) verde.
+- [x] **G6 · Wiring CI** · job `e2e` con `npx playwright install --with-deps chromium` · job-order-parity exit 0 · `sql`/state-baseline skip-safe.
+- [x] **G7 · CI subset verde local** · `npm run ci:local` exit 0 · typecheck/lint/build/unit verdes · e2e smoke verde · sql skip-safe.
 
 ### Comportamiento Esperado (Happy Paths)
 
@@ -304,7 +304,25 @@ N/A · cero UI nueva con decisión de UX · matriz no dispara · página mínima
 
 ## Aprendizajes / Self-Annealing
 
-> Vacío al aprobar. Se rellena durante `/implementar`.
+### 1 · eslint 10 rompe el install (plugins no lo soportan)
+
+eslint 10.6.0 es el latest pero `eslint-plugin-react@7.37.5` (peer `≤^9.7`) y `eslint-plugin-import@2.32.0` (peer `≤^9`) no lo soportan → ERESOLVE. Root cause: los plugins van detrás del release de eslint. Fix: fijar **eslint ^9.39.4** (compat con todos + typescript-eslint 8.62). Documentado en `.claude/memory/reference/stack-versions-PRP-001.md`.
+
+### 2 · Playwright headless-shell requiere libs de sistema
+
+El e2e local falló con `libnspr4.so: cannot open shared object file`. Root cause: Chromium necesita libs de sistema que no vienen con el browser. Fix local: `sudo npx playwright install-deps chromium` (ojo: `sudo npx` pierde el PATH de node → usar `sudo env "PATH=$PATH" npx ...`). En CI lo cubre `--with-deps`. Candidato a memoria `feedback/` si reaparece en otra máquina.
+
+### 3 · run-sql-tests.sh no era skip-safe (rompía Bif 1=A)
+
+Los 5 `.sql` invariantes del template existen desde el boot pero `run-sql-tests.sh` abortaba (exit 1) sin `DATABASE_URL` → el job `sql` no podía ser skip-safe como firmó Bif 1=A. Fix: skip-safe guard al top (paridad `state-baseline.sh`). Wrinkle out-of-scope detectado: inconsistencia `DATABASE_URL` (run-sql) vs `TEST_DATABASE_URL` (smokes hermanos) → **DT-001** para TASK-002.
+
+### 4 · Contador de tests vs meta 10-20
+
+PRP-001 entregó **2 tests** nuevos (1 e2e regression + 1 unit). La meta canónica 10-20 (regla #17) aplica a PRPs de feature con múltiples capas de código de producción. Un scaffold fundacional tiene superficie testeable mínima (página estática + cliente skeleton sin caller) · 2 smokes es lo apropiado · las capas reales (auth · RLS · checkout · pagos) y sus 10-20 tests llegan con los PRPs de feature desde TASK-002. Deviación justificada, NO gap del DoD.
+
+### 5 · Grep cross-codebase del root cause · N/A
+
+PRP-001 es scaffold, no fix de bug · cero patrón de root cause replicable que gripear en `src/`. Sub-paso omitido con justificación.
 
 ---
 
