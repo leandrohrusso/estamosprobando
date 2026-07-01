@@ -1,6 +1,6 @@
 # PRP-001 · Scaffold + infra base (Next.js + Tailwind + shadcn/ui + cliente Supabase + wiring CI)
 
-> **Estado**: EN PROGRESO (paso 4 cerrado · 5 + 6 pendientes)
+> **Estado**: EN PROGRESO (paso 5 SKIP firmado · 6 pendiente)
 > **Fecha**: 2026-06-26
 > **Proyecto**: PUERTITA
 > **Tipo**: feature producto (scaffold fundacional)
@@ -15,7 +15,7 @@
 > 2. ☑ `/planificar` → APROBADO
 > 3. ☑ `/implementar` (4/4 fases)
 > 4. ☑ `/revisar-simple` (0 critical · 0 normal · 1 nit fixeado · override B scaffold)
-> 5. ☐ `/validar` (CSV X/Y Funciona)
+> 5. ⊘ `/validar` SKIP firmado (scaffold sin superficie validable · Bif 1=A)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
 
 ---
@@ -299,6 +299,18 @@ N/A · cero UI nueva con decisión de UX · matriz no dispara · página mínima
 6. ✅ G6 wiring CI + paridad job-order verde.
 7. ✅ G7 `npm run ci:local` subset verde (e2e smoke + sql skip-safe).
 8. ✅ `git diff --stat` muestra solo archivos del Inventario (cero drive-by).
+
+---
+
+## SKIPs justificados
+
+### Paso 5 · `/validar` · SKIP
+
+**Razón:** scaffold sin superficie validable · el PRP entrega una página estática placeholder (`/`) + cliente Supabase **skeleton sin auth ni BD** (🔵 Bif 1=A · TEST DB real → TASK-002) · cero forms · cero flujos · cero RPCs · cero credenciales que ejercitar. Lo único observable por el usuario (la home responde 200 y rinde "PUERTITA") ya está cubierto por el e2e smoke `tests/e2e/regression/prp-001-scaffold.spec.ts` + el unit smoke. Un CSV con Playwright MCP + Supabase MCP no agrega cobertura sobre eso.
+
+**Firma 🔵 user · 2026-06-26:** *"skip firmado de paso 5 y sigamos a entregar"*.
+
+**Implicación:** el paso 5 no genera CSV en `tests/manual/` · la validación funcional queda cubierta por los smokes del DoD (paso 3). La superficie validable real (auth · checkout · pagos · check-in) llega con los PRPs de feature desde TASK-002, donde `/validar` sí aplica pleno.
 
 ---
 
