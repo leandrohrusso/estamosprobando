@@ -107,9 +107,12 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      # Pendiente (PRP de scaffold/CI): instalar Playwright browsers (npx playwright install --with-deps)
-      # + seedear la TEST DB vía secret env vars antes de correr los specs.
-      # State baseline (Postgres+Supabase · skip-safe sin TEST_DATABASE_URL)
+      # Playwright browsers + system deps (Chromium · el config usa solo chromium).
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      # TEST DB real + seed vía secret env vars → TASK-002 (🔵 Bif 1=A de PRP-001).
+      # Hoy el job corre el smoke E2E del scaffold (página estática · sin DB);
+      # los state smokes skipean cleanly sin TEST_DATABASE_URL.
       - name: Smoke · state baseline post-migrations
         run: bash tests/scripts/infra-flujo/state-baseline-post-migrations.sh
       - name: Smoke · state assertion pre-e2e

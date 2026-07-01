@@ -7,14 +7,29 @@ metadata:
 
 # PRP-001 · checkpoint (paso 3 · /implementar)
 
-> **Última actualización:** 2026-06-26 · Fase 2 cerrada.
+> **Última actualización:** 2026-06-26 · Fase 3 cerrada.
 
 ## Estado de fases
 
 - [x] **Fase 1 · Deps reales + scaffold mínimo** — cerrada. Commit `6f79437`.
-- [x] **Fase 2 · Cliente Supabase skeleton + env** — cerrada.
-- [ ] **Fase 3 · Tests del DoD + wiring CI** — próxima.
-- [ ] **Fase 4 · Validación final** — pendiente.
+- [x] **Fase 2 · Cliente Supabase skeleton + env** — cerrada. Commit `e1c5059`.
+- [x] **Fase 3 · Tests del DoD + wiring CI** — cerrada.
+- [ ] **Fase 4 · Validación final** — próxima (`npm run ci:local`).
+
+## Qué se hizo en Fase 3
+
+- `vitest.config.ts` (scope `tests/unit/**/*.test.ts` · evita colisión con specs Playwright).
+- `tests/unit/PRP-001-sanity.test.ts` (vitest · valida import del cliente Supabase) → verde 1/1.
+- `tests/e2e/regression/prp-001-scaffold.spec.ts` (Playwright · home 200 + PUERTITA) → verde 1/1. Alineado a convención regression/ + lowercase (deviación de la ruta del inventario del PRP · refinada).
+- `run-sql-tests.sh` skip-safe sin `DATABASE_URL` (paridad state-baseline · honra Bif 1=A · job sql verde-por-skip hasta TASK-002).
+- `ci.yml` job e2e: step `npx playwright install --with-deps chromium` + comentario PENDIENTE eliminado + TEST DB seed → TASK-002.
+- COVERAGE.md: fila scaffold spec. DT-001 abierta (inconsistencia DATABASE_URL vs TEST_DATABASE_URL → TASK-002).
+- **Libs de sistema Chromium instaladas por el user** (sudo playwright install-deps) para correr e2e local.
+- DoD: job-order-parity ✓ · typecheck ✓ · build ✓ · unit ✓ · e2e ✓.
+
+## Gotcha Fase 3
+
+- Playwright headless-shell requiere libs de sistema (`libnspr4` etc) · en local se instalan con `sudo npx playwright install-deps chromium` (o `sudo env "PATH=$PATH" npx ...` porque sudo pierde el PATH de node) · en CI lo cubre `--with-deps`. Candidato a memoria feedback si reaparece.
 
 ## Qué se hizo en Fase 2
 
