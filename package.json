@@ -1,21 +1,47 @@
 {
-  "name": "PROJECT_NAME_PLACEHOLDER",
+  "name": "puertita",
   "version": "0.0.1",
-  "description": "TODO · 1 línea con qué es el producto",
+  "description": "SaaS multitenant de ticketing para eventos · publicar, vender y validar entradas con cobro directo al organizador",
   "private": true,
   "scripts": {
-    "typecheck": "echo 'TODO: replace with project typecheck command, e.g.: tsc --noEmit'",
-    "lint": "echo 'TODO: replace with project lint command, e.g.: eslint .'",
-    "build": "echo 'TODO: replace with project build command, e.g.: next build'",
+    "dev": "next dev",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "build": "next build",
     "test": "npm run test:unit",
-    "test:unit": "echo 'TODO: replace with project unit test command, e.g.: vitest run'",
-    "test:e2e": "echo 'TODO: replace with project E2E test command, e.g.: playwright test'",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
     "ci:local": "bash scripts/local-ci.sh",
     "prepare": "husky"
   },
-  "devDependencies": {
-    "husky": "^9.0.0"
+  "lint-staged": {
+    "*.{ts,tsx}": "eslint --fix"
   },
-  "dependencies": {},
-  "comment": "TODO al bootstrap del proyecto: (1) reemplazar PROJECT_NAME_PLACEHOLDER con el nombre real, (2) actualizar description, (3) reemplazar los TODO de cada script con el comando real del stack, (4) sumar devDependencies (husky + lint-staged + tooling de lint/test/build) · ⚠️ husky + lint-staged tienen que estar en devDependencies ANTES del primer 'npm install' del bootstrap · sin ellos el script 'prepare: husky' rompe con 'sh: husky: not found' exit 127, (5) sumar dependencies del producto. El script 'prepare: husky' activa los hooks de .husky/ al correr 'npm install'."
+  "dependencies": {
+    "next": "^16.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "@supabase/supabase-js": "^2.108.2",
+    "@supabase/ssr": "^0.12.0"
+  },
+  "devDependencies": {
+    "@next/eslint-plugin-next": "^16.2.9",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.5.2",
+    "eslint": "^9.39.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.7.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.0",
+    "vitest": "^4.1.9"
+  }
 }

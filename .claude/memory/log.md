@@ -59,3 +59,19 @@ type: log
     **Refs:** commit inicial · pack [`github.com/leandrohrusso/workflow-base`](https://github.com/leandrohrusso/workflow-base).
 
 -->
+
+## [2026-06-25] milestone | Bootstrap de PUERTITA · pack workflow-base adaptado al stack + PRD v1 como SoT
+
+**Resumen:** Sesión inicial del proyecto. `/arrancar` detectó estado post-template (5/5 condiciones) y se ejecutó el bootstrap mecánico adaptando el pack workflow-base al stack de PUERTITA (SaaS multitenant de ticketing para eventos), a partir del PRD v1.0 provisto por el user.
+
+**Detalle:** PRD commiteado en `docs/product/references/PRD.md` como SoT inmutable del bootstrap (encoding UTF-8 reconstruido del paste). Llenados: CLAUDE.md (nombre + one-liner), BUSINESS_LOGIC.md §1-§9 (incluye 12 constraints firmes), `package.json` (scripts del stack: tsc/eslint/next/vitest/playwright), `.claude/config/agents-applicability.yml` (3 flags domain-tight en `yes`: multi-tenant · atomicity · migration-safety), `scripts/local-ci.sh` + `.github/workflows/ci.yml` (limpieza de TODOs/guías ya decididas · 6 jobs · paridad intacta), `docs/product/product-roadmap.md` (15 tasks derivadas del PRD v1), `docs/logs/deadlines.md` (cadencias mensuales → 2026-07-25). Stack: Next.js App Router + Supabase (Postgres+RLS+Auth+Edge Functions) + Mercadopago/Mobbex + Resend + Vercel. Pendiente del primer PRP (TASK-001): scaffold real del app + wiring final del CI (deps, Playwright browsers, secrets, TEST DB).
+
+**Refs:** PRD `docs/product/references/PRD.md` · `BUSINESS_LOGIC.md` · `docs/product/product-roadmap.md` · pack [`workflow-base`](https://github.com/leandrohrusso/workflow-base).
+
+## [2026-06-26] decision | PRP-001 scaffold + infra base APROBADO · 2 bifurcaciones firmadas
+
+**Resumen:** `/planificar` generó y aprobó PRP-001 (TASK-001 · scaffold real del app + wiring CI). Modo C complejo · 4 personas pre/post-draft (architect-planning · complexity 🟡 MEDIA · historical-precedent · skeptic).
+
+**Detalle:** 🔵 Bif 1=A (frontera de scope: PRP-001 entrega deps + src/app mínimo + cliente Supabase skeleton + CI con typecheck/lint/build/unit verdes + e2e smoke sin DB + sql/state-baseline skip-safe · TEST DB real + specs e2e/sql con datos diferidos a TASK-002 donde nace el schema). 🔵 Bif 2=A (Tailwind v3 · respeta los stubs del template · cero reescritura · migración a v4 sería PRP propio). Claude Design SKIP firmado (matriz no dispara · página placeholder estática). Skeptic levantó 5 issues operativos + asunciones · todos refinados pre-firma (versiones del stack a documentar en `.claude/memory/reference/stack-versions-PRP-001.md` para que TASK-002 las herede · criterio para vitest.config · next-env.d.ts por convención oficial · nota regla #17 tests en Fase 3 por bootstrapping del harness). Commit local sin push (regla #27 · push reservado al paso 6).
+
+**Refs:** PRP `.claude/PRPs/PRP-001-scaffold-infra-base.md` · roadmap TASK-001 · `BUSINESS_LOGIC.md §7`.

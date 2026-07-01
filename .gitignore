@@ -29,6 +29,10 @@ out/
 .nuxt/
 .svelte-kit/
 
+# Next.js / TypeScript artefactos auto-generados (convención create-next-app)
+next-env.d.ts
+*.tsbuildinfo
+
 # Test outputs
 test-results/
 playwright-report/

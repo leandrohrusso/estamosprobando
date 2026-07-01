@@ -8,6 +8,7 @@ _(vacío al boot · agregar fila cuando se cierre la decisión SÍ/NO en paso 6 
 
 | PRP | Decisión SÍ/NO | Razón breve | Fecha |
 |---|---|---|---|
+| PRP-001 | NO | Scaffold de bajo riesgo · `/revisar-simple` limpio (0 critical · 0 normal) · sin dominios auth/RLS/pagos · ultrareview rinde en PRPs de feature (TASK-002+) | 2026-06-26 |
 
 ## § Entradas UR-NNN
 

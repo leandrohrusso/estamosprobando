@@ -71,7 +71,7 @@ Convenciones del pack workflow-base. Para sesiones nuevas:
 
 > **Cuándo crear entry:** info viva fuera del repo (Linear · Slack · Grafana · docs externas · MCPs · servicios cloud).
 
-- _(vacío al boot · llenar con recursos del proyecto)_
+- [Stack versions PRP-001](reference/stack-versions-PRP-001.md) — versiones exactas del stack instaladas en el scaffold (Next 16.2.9 · React 19.2.7 · Tailwind v3.4.19 · eslint 9 no 10 por compat de plugins · TS 6.0.3 · @types/node 20 alineado a CI) verificadas contra registry. TASK-002+ heredan este set.
 
 ## _archive/ — Memorias archivadas
 

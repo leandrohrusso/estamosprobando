@@ -47,7 +47,7 @@ Cuando el CSV de `/validar` genera specs nuevos vía regression-first FIRME (reg
 
 | Archivo / Tabla | PRP origen | Spec(s) que cubre | Tipo | Estado |
 |---|---|---|---|---|
-| _(vacío al boot · llenar conforme avanzan los PRPs del producto)_ | — | — | — | — |
+| `src/app/layout.tsx` · `src/app/page.tsx` | PRP-001 | `tests/e2e/regression/prp-001-scaffold.spec.ts` — la home responde 200 y rinde el placeholder de PUERTITA (scaffold smoke · sin DB) | E2E | ✅ activo |
 
 ---
 

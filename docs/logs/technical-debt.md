@@ -16,7 +16,7 @@ _(vacío al boot · adopter llena conforme detecte deudas fuera del scope del PR
 
 | ID | Síntoma | Archivo/área | PRP destino | Severidad | Mitigación | Disparador | Sesión |
 |---|---|---|---|---|---|---|---|
-| _(vacío al boot)_ | — | — | — | — | — | — | — |
+| DT-001 | Inconsistencia de nombre de var de conexión a TEST DB: `run-sql-tests.sh` lee `DATABASE_URL` mientras sus hermanos `state-baseline-post-migrations.sh` / `state-assertion.sh` usan `TEST_DATABASE_URL`. Al cablear la TEST DB habrá que exportar ambas o unificar el nombre. | `scripts/run-sql-tests.sh` vs `tests/scripts/infra-flujo/state-*.sh` | TASK-002 | normal | run-sql-tests skipea cleanly sin `DATABASE_URL` (PRP-001 Fase 3) · sin impacto hasta que haya TEST DB | Al cablear la TEST DB real (TASK-002) · unificar en `TEST_DATABASE_URL` | PRP-001 · commit fase 3 |
 
 ## DTs Resueltas
 
