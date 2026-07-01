@@ -60,7 +60,7 @@ for sql_file in "${SQL_FILES[@]}"; do
   fi
 done
 
-# 5 · Exit agregado
+# 4 · Exit agregado
 if [ "$EXIT_CODE" -eq 0 ]; then
   echo "✅ ${#SQL_FILES[@]} spec(s) SQL verde(s)"
 else

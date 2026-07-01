@@ -1,6 +1,6 @@
 # PRP-001 · Scaffold + infra base (Next.js + Tailwind + shadcn/ui + cliente Supabase + wiring CI)
 
-> **Estado**: EN PROGRESO (paso 3 cerrado · 4 + 5 + 6 pendientes)
+> **Estado**: EN PROGRESO (paso 4 cerrado · 5 + 6 pendientes)
 > **Fecha**: 2026-06-26
 > **Proyecto**: PUERTITA
 > **Tipo**: feature producto (scaffold fundacional)
@@ -14,7 +14,7 @@
 > 1. ☑ `/arrancar`
 > 2. ☑ `/planificar` → APROBADO
 > 3. ☑ `/implementar` (4/4 fases)
-> 4. ☐ `/revisar` (LR-NNN · X/Y fixeados)
+> 4. ☑ `/revisar-simple` (0 critical · 0 normal · 1 nit fixeado · override B scaffold)
 > 5. ☐ `/validar` (CSV X/Y Funciona)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
 
