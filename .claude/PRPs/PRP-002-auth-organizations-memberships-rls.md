@@ -13,7 +13,7 @@
 > **Progreso del flujo de 6 pasos:**
 > 1. ☑ `/arrancar`
 > 2. ☑ `/planificar` → APROBADO (2026-07-01 · 5 bifurcaciones firmadas 🔵 user)
-> 3. ☐ `/implementar` (0/4 fases)
+> 3. ☐ `/implementar` (1/4 fases · Fase 1 cerrada)
 > 4. ☐ `/revisar`
 > 5. ☐ `/validar` (CSV)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
@@ -425,4 +425,20 @@ END; $$;
 
 ## Aprendizajes / Self-Annealing
 
-[se rellena durante `/implementar` con gotchas detectados · ej: helper exacto del magic link SSR · comportamiento de RLS con `auth.email()` · flakiness de e2e con sesión programática]
+### [2026-07-01] Fase 1 · Conexión Supabase directa es IPv6-only (WSL2 no la alcanza)
+- **Error:** `psql "$TEST_DATABASE_URL"` → `Network is unreachable` sobre `db.<ref>.supabase.co:5432` (IPv6).
+- **Root cause:** el host directo de Supabase resuelve solo a IPv6; WSL2 no tiene ruta IPv6.
+- **Fix:** usar el **Session pooler** (IPv4, puerto 5432) `postgresql://postgres.<ref>:<pwd>@aws-1-<region>.pooler.supabase.com:5432/postgres`. `test-migrations.sh` ya reescribe `:6543→:5432`.
+- **Aplicar en:** cualquier acceso a la TEST DB desde WSL/CI · regression-first NO (gotcha de tooling/infra · nivel 2 → candidato a memoria `feedback/supabase-direct-conn-ipv6-use-session-pooler.md`).
+
+### [2026-07-01] Fase 1 · Funciones SECURITY DEFINER deben declararse en las whitelists del pack
+- **Error:** `helpers-shape-invariants.sql` INV-B falló: `is_member_of` SECURITY DEFINER con EXECUTE a authenticated sin estar en `public_definer_whitelist`.
+- **Root cause:** el pack exige declarar toda función SECURITY DEFINER expuesta a `authenticated`/`anon` en `public_definer_whitelist` (con justificación) + los helpers RLS invocados desde policies en `rls_canonical_helpers` (deben ser STABLE). Es el punto de integración del adopter.
+- **Fix:** lleno ambas whitelists en `tests/sql/helpers-shape-invariants.sql` (4 funciones + 2 helpers canónicos). Quité el grant sobrante a `anon` en `is_member_of` (least privilege · anon nunca evalúa policies `TO authenticated`).
+- **Aplicar en:** todo PRP futuro que agregue funciones SECURITY DEFINER (TASK-003+ RPCs de stock/checkout) · regression-first: el invariante ya es el spec.
+
+### [2026-07-01] Fase 1 · `test-migrations.sh` dropea el event-trigger `ensure_rls` de Supabase → DT-002
+- **Error:** tras `test-migrations.sh`, `pg_proc` bajó de 5 a 4 SECURITY DEFINER · `ensure_rls` event-trigger + `rls_auto_enable` desaparecieron de la TEST DB.
+- **Root cause:** `DROP SCHEMA public CASCADE` del reset cascadea al event-trigger global `ensure_rls` (depende de `rls_auto_enable`, que vive en `public`).
+- **Fix:** out-of-scope (tooling del pack) → **DT-002** registrada. Mitigación en el PRP: RLS explícito por tabla + invariante `rls-invariants.sql` verde. Cero restauración de `ensure_rls` (objeto Supabase-managed sin fuente propia).
+- **Aplicar en:** endurecer `test-migrations.sh` en un mini-PRP de infra futuro (disparador de DT-002).

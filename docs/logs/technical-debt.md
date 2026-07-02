@@ -16,7 +16,7 @@ _(vacío al boot · adopter llena conforme detecte deudas fuera del scope del PR
 
 | ID | Síntoma | Archivo/área | PRP destino | Severidad | Mitigación | Disparador | Sesión |
 |---|---|---|---|---|---|---|---|
-| DT-001 | Inconsistencia de nombre de var de conexión a TEST DB: `run-sql-tests.sh` lee `DATABASE_URL` mientras sus hermanos `state-baseline-post-migrations.sh` / `state-assertion.sh` usan `TEST_DATABASE_URL`. Al cablear la TEST DB habrá que exportar ambas o unificar el nombre. | `scripts/run-sql-tests.sh` vs `tests/scripts/infra-flujo/state-*.sh` | TASK-002 | normal | run-sql-tests skipea cleanly sin `DATABASE_URL` (PRP-001 Fase 3) · sin impacto hasta que haya TEST DB | Al cablear la TEST DB real (TASK-002) · unificar en `TEST_DATABASE_URL` | PRP-001 · commit fase 3 |
+| DT-002 | El reset de `scripts/test-migrations.sh` (`DROP SCHEMA public CASCADE`) elimina el event-trigger Supabase `ensure_rls` + su función `rls_auto_enable` (viven en `public`) de la TEST DB. La red de seguridad de auto-habilitación de RLS desaparece tras cada corrida de test-migrations. | `scripts/test-migrations.sh` (reset_schema) + TEST DB Supabase | mini-PRP infra / ad-hoc futuro | normal | RLS explícito en cada tabla del PRP (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`) + invariante `tests/sql/rls-invariants.sql` verde atrapa tablas con policy sin RLS · el auto-enable era defensa redundante | Endurecer `test-migrations.sh` (excluir/recrear `ensure_rls` en el reset) · O cuando un PRP futuro dependa del auto-enable | PRP-002 · Fase 1 |
 
 ## DTs Resueltas
 
@@ -24,7 +24,7 @@ _(vacío al boot · mover filas acá cuando un PRP cierre la deuda · agregar co
 
 | ID | Síntoma | Resuelta por | Commit |
 |---|---|---|---|
-| _(vacío al boot)_ | — | — | — |
+| DT-001 | Inconsistencia de var de conexión a TEST DB: `run-sql-tests.sh` leía `DATABASE_URL` mientras sus hermanos usaban `TEST_DATABASE_URL`. | PRP-002 Fase 1 · unificado a `TEST_DATABASE_URL` en `scripts/run-sql-tests.sh` (guard skip-safe + psql call + comentarios) | PRP-002 · commit fase 1 |
 
 ---
 
