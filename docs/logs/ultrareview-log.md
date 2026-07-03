@@ -9,6 +9,7 @@ _(vacío al boot · agregar fila cuando se cierre la decisión SÍ/NO en paso 6 
 | PRP | Decisión SÍ/NO | Razón breve | Fecha |
 |---|---|---|---|
 | PRP-001 | NO | Scaffold de bajo riesgo · `/revisar-simple` limpio (0 critical · 0 normal) · sin dominios auth/RLS/pagos · ultrareview rinde en PRPs de feature (TASK-002+) | 2026-06-26 |
+| PRP-002 | NO | `/revisar` LR-001+LR-002 ya corrió 9 agentes Opus (2 rondas · 15 normales fixeados + 5 DT) · `/validar` cerró CSV 55F/1D + `ci:local` 6/6 · cobertura anti-regresión robusta · decisión user | 2026-07-03 |
 
 ## § Entradas UR-NNN
 
