@@ -27,8 +27,10 @@ BEGIN
   VALUES (p_name, p_slug)
   RETURNING id INTO new_org;
 
+  -- email normalizado a lower() · consistente con el índice único
+  -- uq_memberships_org_lower_email y con link_pending_memberships (LR-001 lr_bug_004).
   INSERT INTO public.memberships (organization_id, user_id, email, role, status)
-  VALUES (new_org, auth.uid(), auth.email(), 'owner', 'active');
+  VALUES (new_org, auth.uid(), lower(auth.email()), 'owner', 'active');
 
   RETURN new_org;
 END;

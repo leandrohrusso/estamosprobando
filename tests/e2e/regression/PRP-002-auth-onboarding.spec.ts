@@ -38,6 +38,10 @@ test('G5 · email inválido muestra error sin enviar', async ({ page }) => {
   await page.getByLabel('Email').fill('no-es-un-email')
   await page.getByRole('button', { name: 'Enviarme el enlace' }).click()
   await expect(page.getByRole('alert')).toBeVisible()
+  // El error está vinculado al input (a11y · WCAG 1.3.1/3.3.1 · LR-001 lr_bug_006).
+  const email = page.getByLabel('Email')
+  await expect(email).toHaveAttribute('aria-invalid', 'true')
+  await expect(email).toHaveAttribute('aria-describedby', 'email-error')
   // Sigue en el formulario (no transicionó a "revisá tu email").
   await expect(
     page.getByRole('heading', { name: 'Entrar a PUERTITA' }),

@@ -55,10 +55,18 @@ export default function LoginPage() {
                     autoComplete="email"
                     placeholder="vos@ejemplo.com"
                     required
+                    aria-invalid={state.status === 'error'}
+                    aria-describedby={
+                      state.status === 'error' ? 'email-error' : undefined
+                    }
                   />
                 </div>
                 {state.status === 'error' && state.message ? (
-                  <p role="alert" className="text-sm text-destructive">
+                  <p
+                    id="email-error"
+                    role="alert"
+                    className="text-sm text-destructive"
+                  >
                     {state.message}
                   </p>
                 ) : null}

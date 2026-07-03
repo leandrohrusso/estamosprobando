@@ -54,3 +54,86 @@ BEGIN
   RAISE NOTICE 'OK G2.3 · usuario sin membership ve 0 orgs';
 END $$;
 ROLLBACK;
+
+-- ===========================================================================
+-- Aislamiento cross-tenant del lado WRITE (LR-001 lr_bug_001).
+-- Escribir una membership = conceder acceso a un tenant → la ruta de mutación
+-- es la más peligrosa para constraint #1. Verifica que mbr_write / org_update
+-- (owner-gated) bloquean la escritura cross-tenant y la escritura de no-owners.
+-- ===========================================================================
+
+-- Escenario 4 · owner de A NO puede INSERT una membership en la org B ---------
+-- (WITH CHECK has_role(B, owner) = false → RLS rechaza · error 42501).
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-000000001001','email','owner-a@test.puertita')::text, true);
+DO $$
+DECLARE blocked boolean := false;
+BEGIN
+  BEGIN
+    INSERT INTO public.memberships (organization_id, email, role, status)
+    VALUES ('00000000-0000-0000-0000-00000000b001', 'intruso@test.puertita', 'admin', 'active');
+  EXCEPTION WHEN insufficient_privilege THEN
+    blocked := true;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'FAIL cross-tenant WRITE: owner de A pudo INSERT membership en org B'; END IF;
+  RAISE NOTICE 'OK G-write.4 · owner de A NO puede escribir memberships de B';
+END $$;
+ROLLBACK;
+
+-- Escenario 5 · owner de A NO puede UPDATE la org B (RLS filtra USING → 0 filas)
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-000000001001','email','owner-a@test.puertita')::text, true);
+DO $$
+DECLARE n int;
+BEGIN
+  UPDATE public.organizations SET name = 'hijacked' WHERE id = '00000000-0000-0000-0000-00000000b001';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 0 THEN RAISE EXCEPTION 'FAIL cross-tenant WRITE: owner de A pudo UPDATE org B (% filas)', n; END IF;
+  RAISE NOTICE 'OK G-write.5 · owner de A NO puede UPDATE org B (0 filas)';
+END $$;
+ROLLBACK;
+
+-- Escenario 6 · owner de A NO puede DELETE una membership de la org B ---------
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-000000001001','email','owner-a@test.puertita')::text, true);
+DO $$
+DECLARE n int;
+BEGIN
+  DELETE FROM public.memberships WHERE organization_id = '00000000-0000-0000-0000-00000000b001';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 0 THEN RAISE EXCEPTION 'FAIL cross-tenant WRITE: owner de A pudo DELETE memberships de B (% filas)', n; END IF;
+  RAISE NOTICE 'OK G-write.6 · owner de A NO puede DELETE memberships de B (0 filas)';
+END $$;
+ROLLBACK;
+
+-- Escenario 7 · un miembro NO-owner de A (staff) NO puede escribir memberships
+-- de su PROPIA org (mbr_write es owner-gated · no todo miembro puede invitar).
+BEGIN;
+SET LOCAL ROLE authenticated;
+-- 1) como owner de A, dar de alta un staff activo (user3) en A (permitido).
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-000000001001','email','owner-a@test.puertita')::text, true);
+INSERT INTO public.memberships (organization_id, user_id, email, role, status)
+VALUES ('00000000-0000-0000-0000-00000000a001', '00000000-0000-0000-0000-000000001003', 'staff3@test.puertita', 'staff', 'active');
+-- 2) ahora, como ese staff, intentar invitar a otra persona a A → bloqueado.
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-000000001003','email','staff3@test.puertita')::text, true);
+DO $$
+DECLARE blocked boolean := false;
+BEGIN
+  BEGIN
+    INSERT INTO public.memberships (organization_id, email, role, status)
+    VALUES ('00000000-0000-0000-0000-00000000a001', 'invitado-por-staff@test.puertita', 'staff', 'pending');
+  EXCEPTION WHEN insufficient_privilege THEN
+    blocked := true;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'FAIL: un staff (no-owner) de A pudo escribir memberships de A'; END IF;
+  RAISE NOTICE 'OK G-write.7 · staff no-owner de A NO puede escribir memberships (owner-gate)';
+END $$;
+ROLLBACK;

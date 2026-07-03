@@ -35,8 +35,7 @@ CREATE TABLE IF NOT EXISTS public.memberships (
   email           TEXT NOT NULL,
   role            public.membership_role   NOT NULL DEFAULT 'staff',
   status          public.membership_status NOT NULL DEFAULT 'pending',
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (organization_id, email)
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_memberships_user  ON public.memberships(user_id);
@@ -45,6 +44,16 @@ CREATE INDEX IF NOT EXISTS idx_memberships_email ON public.memberships(lower(ema
 -- hot-path de los helpers RLS is_member_of()/has_role() (org + user + status)
 CREATE INDEX IF NOT EXISTS idx_memberships_org_user_status
   ON public.memberships(organization_id, user_id, status);
+
+-- Unicidad de membership por (org, email) CASE-INSENSITIVE: el email es un
+-- identificador (no display). Sin esto, 'Staff@x' y 'staff@x' coexistirían en la
+-- misma org y ambas podrían activarse, mientras que el link/index usan lower()
+-- (asimetría write=crudo / read=lower · LR-001 lr_bug_004). Índice de expresión
+-- en vez de constraint inline para poder normalizar sobre lower(email).
+-- Idempotente: DROP del constraint viejo (no-op si ya no existe) + índice IF NOT EXISTS.
+ALTER TABLE public.memberships DROP CONSTRAINT IF EXISTS memberships_organization_id_email_key;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_memberships_org_lower_email
+  ON public.memberships(organization_id, lower(email));
 
 COMMENT ON TABLE public.organizations IS 'Tenant. Cada dato de negocio pertenece a exactamente una organización (PRD §3.1).';
 COMMENT ON TABLE public.memberships   IS 'Relación usuario↔org con rol. RLS lee la pertenencia vía esta tabla (PRP-002).';

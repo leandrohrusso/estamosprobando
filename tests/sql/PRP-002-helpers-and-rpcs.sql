@@ -61,3 +61,27 @@ BEGIN
   RAISE NOTICE 'OK G8 · link_pending_memberships vincula por email y activa';
 END $$;
 ROLLBACK;
+
+-- Unicidad (org, email) CASE-INSENSITIVE (LR-001 lr_bug_004) ----------------
+-- Sin normalizar, 'Staff@x' y 'staff@x' coexistirían en la misma org mientras
+-- el link/index usan lower() (asimetría write=crudo / read=lower). El índice
+-- único uq_memberships_org_lower_email lo previene. Corre sin SET ROLE (el
+-- superuser bypassa RLS · testeamos el invariante de schema, no las policies).
+BEGIN;
+DO $$
+DECLARE dup boolean := false;
+BEGIN
+  INSERT INTO public.memberships (organization_id, email, role, status)
+  VALUES ('00000000-0000-0000-0000-00000000a001', 'Case-Test@x.com', 'staff', 'pending');
+  BEGIN
+    INSERT INTO public.memberships (organization_id, email, role, status)
+    VALUES ('00000000-0000-0000-0000-00000000a001', 'case-test@x.com', 'staff', 'pending');
+  EXCEPTION WHEN unique_violation THEN
+    dup := true;
+  END;
+  IF NOT dup THEN
+    RAISE EXCEPTION 'FAIL: (org,email) NO es case-insensitive · Case-Test@x y case-test@x coexisten en la misma org';
+  END IF;
+  RAISE NOTICE 'OK · unicidad (org, lower(email)) rechaza duplicados case-insensitive';
+END $$;
+ROLLBACK;

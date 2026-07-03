@@ -34,9 +34,20 @@ export async function GET(request: NextRequest) {
 
   // Vincula memberships pending (user_id NULL) cuyo email coincide con el del
   // usuario recién autenticado → user_id seteado + status='active' (SD-cos-2).
-  await supabase.rpc('link_pending_memberships')
+  // Si el vínculo falla, NO seguir como "usuario nuevo": un invitado terminaría
+  // en /onboarding creando su propia org en vez de unirse a la que lo invitó.
+  const { error: linkError } = await supabase.rpc('link_pending_memberships')
+  if (linkError) {
+    return NextResponse.redirect(`${origin}/login?error=link`)
+  }
 
-  const memberships = await getActiveMemberships()
+  let memberships
+  try {
+    memberships = await getActiveMemberships()
+  } catch {
+    // Fallo real de la query (no "sin orgs") → volver a login, no a onboarding.
+    return NextResponse.redirect(`${origin}/login?error=session`)
+  }
   const destination = resolvePostLoginRedirect(memberships)
   return NextResponse.redirect(`${origin}${destination}`)
 }

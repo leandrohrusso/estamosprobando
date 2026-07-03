@@ -13,7 +13,13 @@ export default async function OnboardingPage() {
   const user = await getSessionUser()
   if (!user) redirect('/login')
 
-  const memberships = await getActiveMemberships()
+  let memberships
+  try {
+    memberships = await getActiveMemberships()
+  } catch {
+    // Fallo real de la query → volver a login (no asumir "usuario sin orgs").
+    redirect('/login?error=session')
+  }
   if (memberships.length > 0) redirect(resolvePostLoginRedirect(memberships))
 
   return (

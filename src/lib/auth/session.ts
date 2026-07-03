@@ -42,9 +42,15 @@ export async function getActiveMemberships(): Promise<ActiveMembership[]> {
     .eq('user_id', user.id)
     .eq('status', 'active')
 
-  if (error || !data) return []
+  // Un error real (permission-denied de RLS · timeout · embed roto) NO es lo
+  // mismo que "el usuario no tiene orgs": colapsarlo a `[]` mandaría a un usuario
+  // CON organización a crear una nueva (segunda org / slug duplicado). Lo
+  // propagamos para que el caller decida (típicamente volver a /login).
+  if (error) {
+    throw new Error(`getActiveMemberships: ${error.message}`)
+  }
 
-  return data.map((row) => {
+  return (data ?? []).map((row) => {
     // el join to-one llega como objeto; algunos tipados lo infieren como array
     const org = Array.isArray(row.organizations)
       ? row.organizations[0]

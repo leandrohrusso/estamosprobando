@@ -98,7 +98,7 @@ Cómo se invocó `/revisar`:
 
 | PRP | Fecha decisión | Decisión | Justificación (1 frase) | Run asociado |
 |---|---|---|---|---|
-| _(agregar fila al tomar la decisión SÍ/NO en paso 4 de cada PRP del producto)_ | — | — | — | — |
+| PRP-002 | 2026-07-03 | SÍ | Área sensible: auth + multi-tenancy + RLS + RPCs SECURITY DEFINER (constraints del dominio en BUSINESS_LOGIC.md § 8). | LR-001 |
 
 ### Convenciones de la tabla
 
@@ -114,7 +114,7 @@ Cómo se invocó `/revisar`:
 
 | Run | Fecha | PRP | Scope | Base SHA | Head SHA | Archivos | LoC (+/−) | Bugs (C/N/Nit-bl) | Descartados (filtro Bif 6) | Costo est. | Duración | Status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| _(agregar fila al ejecutar primer run · consolidator del skill la escribe automáticamente)_ | — | — | — | — | — | — | — | — | — | — | — | — |
+| LR-001 | 2026-07-03 | PRP-002 | `branch:dev` (diff vs `main`) | e4a9036 | 647df90 | 36 | +1847/−17 | 0 / 8 / 0 | 9 | $0 (local Opus) | — | ✅ cerrado |
 
 ---
 
@@ -126,19 +126,23 @@ Cómo se invocó `/revisar`:
 
 | Área | Último LR | Fecha | SHA cubierto | Notas |
 |---|---|---|---|---|
-| _(agregar fila al ejecutar primer run · consolidator del skill la escribe automáticamente)_ | — | — | — | — |
+| `src/app/(auth)/*` · `src/app/auth/confirm/*` · `src/lib/auth/*` | LR-001 | 2026-07-03 | 647df90 | Login magic link · onboarding · sesión/redirect. |
+| `src/lib/supabase/*` · `src/proxy.ts` | LR-001 | 2026-07-03 | 647df90 | Cliente SSR + middleware/proxy de sesión. |
+| `db/migrations/0001-0003` (organizations · memberships · RLS · helpers · RPCs) | LR-001 | 2026-07-03 | 647df90 | Área sensible auth/multi-tenancy · re-revisión periódica justificada. |
+| `src/components/ui/*` (button · input · card · label) | LR-001 | 2026-07-03 | 647df90 | Primitivos UI nuevos (a11y contraste → DT-005). |
+| `tests/sql/*` · `tests/e2e/regression/PRP-002-*` | LR-001 | 2026-07-03 | 647df90 | Specs SQL + e2e del PRP. |
 
 ### Por PRP
 
 | PRP | Último LR | SHA cubierto | Status |
 |---|---|---|---|
-| _(agregar fila al ejecutar primer run sobre un PRP)_ | — | — | — |
+| PRP-002 | LR-001 | 647df90 | Fase 1+2 revisadas · Fase 3/4 pendientes por diseño (no en diff). |
 
 ### Por rango de commits
 
 | Rango cubierto | Run | Cobertura | Notas |
 |---|---|---|---|
-| _(agregar fila al ejecutar primer run · consolidator del skill la escribe automáticamente)_ | — | — | — |
+| `e4a9036..647df90` | LR-001 | 100% | Commits Fase 1 (`22253a1`) + Fase 2 (`647df90`) del PRP-002. |
 
 ---
 
@@ -148,7 +152,16 @@ Cómo se invocó `/revisar`:
 
 | Bug ID | Run | Severidad | Verified | Detectores | Archivo:línea | Resumen | Estado | Owner/PRP |
 |---|---|---|---|---|---|---|---|---|
-| _(agregar fila al ejecutar primer run · consolidator del skill la escribe automáticamente)_ | — | — | — | — | — | — | — | — |
+| lr_bug_001 | LR-001 | normal | false¹ | multi-tenant | `tests/sql/PRP-002-rls-isolation.sql:8-57` | Aislamiento cross-tenant WRITE-side (mbr_write/org_update owner-gate) sin invariante SQL · solo se testea SELECT | 🟢 fixeado | PRP-002 (fixeado post-LR-001 · regression-first) |
+| lr_bug_002 | LR-001 | normal | false¹ | a11y | `src/app/globals.css:78` (`--input`) | Borde del Input ~1.36:1 vs Card blanca (falla SC 1.4.11 UI-component 3:1) | ⚪ diferido | DT-005 (out-of-scope · firma user A) |
+| lr_bug_003 | LR-001 | normal | false¹ | a11y | `src/app/globals.css:58` (`--primary`) | Texto del botón primario ~4.32:1 (bajo el 4.5:1 de SC 1.4.3 texto normal) | ⚪ diferido | DT-005 (out-of-scope · firma user A) |
+| lr_bug_004 | LR-001 | normal | false¹ | architect | `db/migrations/0003_onboarding_rpcs.sql:31` · `0001:44` | Asimetría de normalización de email: write=raw (`auth.email()`) · read/link/index=`lower()` · dos memberships case-variant pueden coexistir | 🟢 fixeado | PRP-002 (fixeado post-LR-001 · regression-first) |
+| lr_bug_005 | LR-001 | normal | false¹ | correctness | `src/lib/auth/session.ts:45` | `getActiveMemberships` swallow de error → `[]`, indistinguible de "sin orgs" → usuario con org puede ir a `/onboarding` ante fallo transitorio | 🟢 fixeado | PRP-002 (fixeado post-LR-001 · regression-first) |
+| lr_bug_006 | LR-001 | normal | false¹ | a11y | `src/app/(auth)/login/page.tsx:51-63` · `onboarding-form.tsx:37-50` | Error no asociado al input (sin `aria-invalid`/`aria-describedby`/`id`) · SC 1.3.1/3.3.1 | 🟢 fixeado | PRP-002 (fixeado post-LR-001 · regression-first) |
+| lr_bug_007 | LR-001 | normal | false¹ | security | `src/app/(auth)/login/actions.ts:33` (`sendMagicLink`) | Endpoint público de magic link sin rate limiting a nivel app (email-bombing / cuota SMTP) · mitigado por rate-limit del proveedor | ⚪ diferido | DT-004 (out-of-scope · firma user A) |
+| lr_bug_008 | LR-001 | normal | false¹ | correctness | `src/app/auth/confirm/route.ts:37` | Resultado de `link_pending_memberships` no inspeccionado: ante fallo, invitado va a `/onboarding` en vez de a su org (hermano de lr_bug_005) | 🟢 fixeado | PRP-002 (fixeado post-LR-001 · regression-first) |
+
+> ¹ `verified: false` = sin overlap cross-agente (cada finding tiene 1 detector · convención § "Marcado verified"). **Todos fueron verificados contra fuente por el consolidator (sub-paso 6.5 · `Read` directo del archivo citado): las 8 afirmaciones coinciden con el código real.** El `false` refleja solo la ausencia de confirmación por ≥2 agentes, no falta de verificación.
 
 ---
 
@@ -170,4 +183,131 @@ Cómo se invocó `/revisar`:
 
 ---
 
-*Log file inaugurado al boot del template · cero entradas reales hasta el primer run del skill `/revisar` en este proyecto. Shape canónico documentado en este header · cero refs proyecto-specific al boot.*
+## LR-001 · 2026-07-03 · PRP-002
+
+**Scope:** `branch:dev` · diff vs `main` (`e4a9036..647df90`) · 36 archivos · +1847/−17 · Fase 1 (`22253a1`) + Fase 2 (`647df90`).
+**Preflight:** verde 6/6 · `tmp/local-ultrareview-preflight-2026-07-03T00-32-05Z.txt`.
+**PRP:** `.claude/PRPs/PRP-002-auth-organizations-memberships-rls.md` (Fase 1+2 · Fase 3/4 pendientes por diseño).
+
+### Cobertura de agentes (9/9 corrieron)
+
+| Agente | Findings crudos | Con hallazgos |
+|---|---|---|
+| architect | 3 (1 normal · 2 nit) | sí |
+| security | 2 (1 normal · 1 nit) | sí |
+| multi-tenant | 2 (1 normal · 1 nit) | sí |
+| atomicity | 1 (1 nit) | sí |
+| tests | 1 (1 nit) | sí |
+| correctness | 4 (2 normal · 2 nit) | sí |
+| a11y | 4 (3 normal · 1 nit) | sí |
+| i18n | 0 | `### No findings` |
+| migration-safety | 0 | `### No findings` |
+
+**Total findings crudos:** 17 (8 normal · 9 nit) · **dedupe:** 0 merges (cero solape exacto `file:line` cross-agente · pares vecinos como atomicity:1 L62 vs correctness:3 L64 son bugs distintos · NO match).
+
+### Filtrado Bif 6 = A
+
+- **8 normal → PASAN** (severidad justifica el riesgo de FP independiente del count).
+- **9 nit con 1 detector → DESCARTADOS** (cero confirmación cross-agente · filtro contractual · cero excepción por corazonada).
+
+**`discarded_by_filter = 9`** (detalle · viven hasta que ≥2 agentes los detecten en un run futuro):
+
+| # | Agente | Sev | Archivo:línea | Título | Motivo descarte |
+|---|---|---|---|---|---|
+| 1 | architect | nit | `PRP-002.md:47-56` | G1/G2/G3/G9 cumplidos sin marcar `[x]` (marcado mixto) | nit · 1 detector |
+| 2 | architect | nit | `src/app/auth/confirm/route.ts:26-29` | Rama `exchangeCodeForSession` (PKCE) sin caller ni cobertura | nit · 1 detector |
+| 3 | security | nit | `db/migrations/0003_onboarding_rpcs.sql:13` | RPC DEFINER no valida forma de `p_slug` en el body (bypass de slugify/Zod vía PostgREST) | nit · 1 detector |
+| 4 | multi-tenant | nit | `db/migrations/0002_rls_and_helpers.sql:45` | `GRANT INSERT, DELETE ON organizations` sin policy (desvío least-privilege · RLS default-deny lo bloquea) | nit · 1 detector |
+| 5 | atomicity | nit | `src/app/(auth)/onboarding/actions.ts:62` | Retry de slug trata cualquier 23505 como colisión de slug (coupling al schema actual) | nit · 1 detector |
+| 6 | tests | nit | specs `PRP-002-*` | Naming MAYÚSCULA divergente del canónico `prp-NNN-` (README + precedente `prp-001-scaffold`) | nit · 1 detector |
+| 7 | correctness | nit | `src/app/(auth)/onboarding/actions.ts:64` | Reintento de slug puede generar doble guión (`nombre--2`) al truncar sobre un guión | nit · 1 detector |
+| 8 | correctness | nit | `src/lib/auth/session.ts:53` | `org.slug as string` asume org definido (acceso potencial a undefined si el embed llega vacío) | nit · 1 detector |
+| 9 | a11y | nit | `src/components/ui/button.tsx:20` · `input.tsx:13` | Altura 40px (h-10) bajo la guía de target táctil 44px (cumple AA 2.5.8) | nit · 1 detector |
+
+> **Nota de calibración:** varios descartados son señalamientos legítimos (naming de specs · `p_slug` sin validar en el body · least-privilege de grants). El filtro Bif 6 = A los difiere por falta de confirmación cross-agente · si reaparecen en un run futuro con ≥2 detectores, pasan. Cero "salvar" señal débil por corazonada (doctrina del consolidator).
+
+### Sub-paso 6.7 · grep doc obsoleta
+
+`git diff main --name-only -- '*.md'` → 7 docs modificados · grep de `diferible|fix oportunista|para próximo PR|deferred|skip por ahora` → **0 matches**. Cero finding agregado.
+
+### Hallazgos consolidados · detalle por bug (8 · todos `normal` · mini-checklist quality-senior 6 puntos)
+
+**lr_bug_001 · normal · confidence high · detectores: [multi-tenant]**
+- **Archivo:** `tests/sql/PRP-002-rls-isolation.sql:8-57`
+- **Descripción:** el único spec de aislamiento valida solo SELECT (count orgs/memberships ajenas=0). La ruta WRITE (mbr_write/org_update owner-gate) no tiene invariante: no se prueba (a) owner de A escribiendo membership con `organization_id=B`, (b) staff/admin de A escribiendo memberships de su org (owner-gate niega), (c) no-owner UPDATE organizations de otra org.
+- **Suggested fix:** agregar escenarios `SET LOCAL ROLE authenticated` + claims de owner A ejecutando `INSERT INTO memberships (organization_id=B)` / `UPDATE organizations WHERE id=B` esperando `ROW_COUNT=0` o error, + escenario miembro no-owner de A.
+- **verified:** false (1 detector) · source-verified ✅ (spec solo cubre SELECT). **quality_review: passed** (UUIDs de fixture fijos son canónicos · regla seed-upsert-with-fixed-id · regression-first FIRME).
+- **Scope:** IN-SCOPE (test file del propio PRP) → 🔴 pendiente.
+
+**lr_bug_002 · normal · confidence high · detectores: [a11y]**
+- **Archivo:** `src/app/globals.css:78` (`--input` #e6ddd3) · usado por `src/components/ui/input.tsx:13`
+- **Descripción:** borde del input (único límite visual) vs Card `--card` #ffffff ≈1.36:1 · bajo el 3:1 de WCAG 1.4.11. Campo casi imperceptible en ambos forms.
+- **Suggested fix:** oscurecer el token de borde de inputs a ≥3:1 vs `--card` (~#a99e8f o más oscuro).
+- **verified:** false (1 detector) · source-verified ✅ (token #e6ddd3 confirmado). **quality_review: passed** (cambio de token · cero hardcode).
+- **Scope:** OUT-OF-SCOPE → **DT-005** (`globals.css` vive en PRP-001, NO en el diff · cambio cross-cutting afecta toda la app).
+
+**lr_bug_003 · normal · confidence high · detectores: [a11y]**
+- **Archivo:** `src/app/globals.css:58` (`--primary` #c15c38) · usado por `src/components/ui/button.tsx:11`
+- **Descripción:** texto blanco (`--primary-foreground` #fff) sobre `--primary` ≈4.32:1 · `text-sm` (14px) no califica como texto grande → aplica 4.5:1 (SC 1.4.3) y falla marginalmente. Afecta el CTA de ambos flujos en tema claro.
+- **Suggested fix:** oscurecer `--primary` en light a ≥4.5:1 (el agente propone `--color-primary-hover` #a84b2b ≈5.4:1 como base).
+- **verified:** false (1 detector) · source-verified ✅ (tokens confirmados). **quality_review: PENDING** — usar `#a84b2b` (hoy = `--color-primary-hover`) como base deja el hover sin headroom y cambia la identidad de marca app-wide + cascada a `--ring`/`--color-primary-soft`. Es decisión de diseño (matriz Claude Design), NO cambio mecánico. Re-validar impacto de marca/hover antes de codificar.
+- **Scope:** OUT-OF-SCOPE → **DT-005**.
+
+**lr_bug_004 · normal · confidence medium · detectores: [architect]**
+- **Archivo:** `db/migrations/0003_onboarding_rpcs.sql:31` · `db/migrations/0001_*.sql:44` (UNIQUE)
+- **Descripción:** write path almacena email crudo (`create_organization_with_owner` inserta `auth.email()` sin normalizar · UNIQUE(organization_id, email) case-sensitive). Read paths normalizan a lower (`link_pending_memberships` matchea `lower(email)`, index `idx_memberships_email ON memberships(lower(email))`). Dos memberships `Staff@x`/`staff@x` pueden coexistir y ambas activarse. Mitigado hoy (Supabase lowercasea auth emails) pero `addMember` de Fase 3 tomará email de input libre del Owner y cementará el path crudo. Fase 1 punto-de-no-retorno.
+- **Suggested fix:** unificar sobre `lower(email)`: `UNIQUE(organization_id, lower(email))` como índice de expresión + normalizar en el INSERT del RPC (`lower(auth.email())`), o `citext`.
+- **verified:** false (1 detector) · source-verified ✅ (write crudo L31 + read lower L54 confirmados). **quality_review: passed** — fix de causa raíz · simétrico write+read+index. Nota: elegir 1 de las 2 alternativas + aplicar patrón idempotente (`DROP INDEX IF EXISTS` antes de `CREATE`) por regla migrations-idempotency.
+- **Scope:** IN-SCOPE (schema/RPC del propio PRP · decisión Fase 1 no-retorno · conviene cerrarla antes de Fase 3) → 🔴 pendiente.
+
+**lr_bug_005 · normal · confidence medium · detectores: [correctness]**
+- **Archivo:** `src/lib/auth/session.ts:45`
+- **Descripción:** `if (error || !data) return []` colapsa dos estados opuestos: (a) usuario sin memberships, (b) query falló (permission-denied RLS · timeout · error del embed). Aguas abajo `resolvePostLoginRedirect([])` manda a `/onboarding`. Usuario que SÍ tiene org, ante fallo transitorio, es enviado a crear org nueva → segunda org/slug duplicado en vez de su dashboard.
+- **Suggested fix:** distinguir error de vacío: si `error != null` propagar/loguear y que `confirm/route.ts` redirija a `/login?error=auth` en vez de `/onboarding`. Mínimo `console.error(error)` antes del `return []`.
+- **verified:** false (1 detector) · source-verified ✅ (L45 confirmada). **quality_review: passed** — hermano de lr_bug_008 (mismo patrón "cualquier fallo → onboarding") · **fixear ambos juntos** (punto 6 simetría).
+- **Scope:** IN-SCOPE → 🔴 pendiente.
+
+**lr_bug_006 · normal · confidence medium · detectores: [a11y]**
+- **Archivo:** `src/app/(auth)/login/page.tsx:51-63` · `src/app/(auth)/onboarding/onboarding-form.tsx:37-50`
+- **Descripción:** el error se renderiza en `<p role="alert">` (lo anuncia al aparecer) pero el input no expone `aria-invalid` ni `aria-describedby` y el error no tiene `id`. Un usuario de lector de pantalla que vuelva al campo no recibe el estado inválido ni la relación campo↔error (SC 1.3.1/3.3.1).
+- **Suggested fix:** dar `id="email-error"`/`id="name-error"` al `<p role="alert">` + `aria-invalid={state.status==='error'}` + `aria-describedby` condicional en el `<Input>` (el primitivo ya pasa `...props`).
+- **verified:** false (1 detector) · source-verified ✅ (Input pasa props · forms en diff). **quality_review: passed** — patrón a11y estándar · simétrico en ambos forms.
+- **Scope:** IN-SCOPE (forms + `input.tsx` en el diff) → 🔴 pendiente.
+
+**lr_bug_007 · normal · confidence medium · detectores: [security]**
+- **Archivo:** `src/app/(auth)/login/actions.ts:33` (`sendMagicLink` · `signInWithOtp`)
+- **Descripción:** endpoint público pre-auth dispara `signInWithOtp` con cualquier email sin rate limit propio → vector de email-bombing / agotamiento de cuota SMTP. Mitigación: Supabase aplica rate limiting server-side propio (email+IP) · DT-003 ya documenta el límite del SMTP. Impacto acotado a la protección del proveedor.
+- **Suggested fix:** al cablear rate limiting del edge/proxy (o al integrar Resend TASK-008) agregar límite por IP+email a `/login`.
+- **verified:** false (1 detector) · source-verified ✅ (endpoint público confirmado). **quality_review: passed** (plan de fix sólido · depende de infra futura).
+- **Scope:** OUT-OF-SCOPE (depende de edge/proxy o Resend TASK-008 no integrado) → **DT-004**.
+
+**lr_bug_008 · normal · confidence low · detectores: [correctness]**
+- **Archivo:** `src/app/auth/confirm/route.ts:37`
+- **Descripción:** `await supabase.rpc('link_pending_memberships')` ignora el error. Usuario invitado (membership pending por email · Bif 3=A); si la RPC falla transitoriamente, sus memberships no se vinculan, `getActiveMemberships` devuelve `[]` y va a `/onboarding` a crear su propia org en vez de unirse. Combinado con lr_bug_005, la ruta post-login trata cualquier fallo como "usuario nuevo".
+- **Suggested fix:** capturar `{error}` de la RPC y ante error loguear y/o redirigir a `/login?error=link`.
+- **verified:** false (1 detector) · source-verified ✅ (L37 ignora resultado). **quality_review: passed** — hermano de lr_bug_005 · fixear juntos (simetría).
+- **Scope:** IN-SCOPE → 🔴 pendiente.
+
+### Métricas agregadas (acumulado tras LR-001)
+
+- **Runs totales:** 1 · **findings crudos:** 17 · **consolidados (post-filtro):** 8 · **descartados por filtro Bif 6:** 9 (53%).
+- **Por severidad:** 0 critical · 8 normal · 0 nit-backlog.
+- **Verified por overlap (≥2 detectores):** 0/8 (0%) · **source-verified por consolidator (6.5):** 8/8 (100%).
+- **Calidad de suggested fixes (mini-checklist regla #8):** 7 `passed` · 1 `PENDING` (lr_bug_003) · 0 `REJECTED`.
+- **DTs abiertas en el acto:** 2 (DT-004 rate limiting · DT-005 contraste tokens).
+- **In-scope PRP-002 (🔴 pendiente · bloquean merge):** 5 (lr_bug_001 · 004 · 005 · 006 · 008).
+
+### Próxima acción recomendada
+
+**Resolver los 5 normales in-scope antes del merge** (regla #1 always-fix-all-bugs · regression-first FIRME):
+
+1. **lr_bug_005 + lr_bug_008 juntos** (simetría · patrón "cualquier fallo → onboarding" en `session.ts` + `confirm/route.ts`).
+2. **lr_bug_004** (normalización email · decisión Fase 1 punto-de-no-retorno · cerrar antes de Fase 3 `addMember` · migración idempotente).
+3. **lr_bug_001** (invariante SQL WRITE-side · área multi-tenancy sensible).
+4. **lr_bug_006** (aria en inputs · ambos forms).
+
+Antes de codificar **lr_bug_003** (queda como DT-005) el principal NO debe aplicar el fix sin re-validar el impacto de marca/hover (`quality_review: PENDING`). **DT-004 + DT-005** quedan registradas · las cierra su PRP destino (Resend/TASK-008 · sesión de tokens del DS). Los 9 nits descartados viven hasta un run futuro con ≥2 detectores.
+
+---
+
+*Log file inaugurado por el primer run del skill `/revisar` (LR-001 · 2026-07-03 · PRP-002). Shape canónico documentado en el header.*

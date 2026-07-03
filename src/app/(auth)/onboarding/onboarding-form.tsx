@@ -41,10 +41,18 @@ export function OnboardingForm() {
               autoComplete="organization"
               placeholder="Productora La Puerta"
               required
+              aria-invalid={state.status === 'error'}
+              aria-describedby={
+                state.status === 'error' ? 'name-error' : undefined
+              }
             />
           </div>
           {state.status === 'error' && state.message ? (
-            <p role="alert" className="text-sm text-destructive">
+            <p
+              id="name-error"
+              role="alert"
+              className="text-sm text-destructive"
+            >
               {state.message}
             </p>
           ) : null}
