@@ -1,14 +1,19 @@
 ---
-name: PRP-002 checkpoint · Fase 3 cerrada · 2026-07-03
-description: Estado del bucle /implementar de PRP-002 al cerrar Fase 3 (org context + RBAC + gestión de miembros). Próximo: Fase 4 (validación final G1–G10).
+name: PRP-002 checkpoint · paso 3 cerrado (4/4 fases) · 2026-07-03
+description: Estado del PRP-002 al cerrar el paso 3 /implementar (4 fases · G1–G10 verde). Próximo: paso 4 /revisar.
 metadata:
   type: project
 ---
 
-# PRP-002 · checkpoint · Fase 3 cerrada · 2026-07-03
+# PRP-002 · checkpoint · paso 3 cerrado (4/4 fases) · 2026-07-03
 
-> **Próxima acción:** arrancar Fase 4 (validación final · G1–G10 + guard service_role + smoke visual + COVERAGE.md) del PRP-002.
-> **Skill a invocar:** `/implementar` (última fase) tras cargar `.env.local` (`set -a; . ./.env.local; set +a`).
+> **Próxima acción:** paso 4 del flujo · `/revisar` (multi-agent code review del diff de PRP-002 vs main).
+> **Nota para `/revisar`:** confirmar con el user si el MVP necesita multi-owner/transferencia (SD-cos-11 firmó Owner único · opción A) · revisar el diseño de RBAC + los guards `requireMembership`/`requireRole`.
+> **Cargar entorno si se corre algo:** `.env.local` (`set -a; . ./.env.local; set +a`).
+
+## Estado al cierre del paso 3 (Fase 4 · validación final verde)
+
+**G1–G10 todos verdes** (ver PRP § Criterios de Éxito + Aprendizajes 2026-07-03 Fase 4): guard #10 (0 `SERVICE_ROLE` en `src/`) · G1 idempotencia · G2/G3 SQL 7/7 · G4–G8 e2e 8/8 · G9 (`TEST_DATABASE_URL`) · G10 ~17 tests · typecheck+build. Smoke visual (Playwright runner + screenshots · MCP no conectado) OK en login/select-org/dashboard/members. Fix Fase 4: `getOrgMembers` ordenaba por columna enum (orden de declaración, no alfabético) → orden explícito en JS.
 
 ## Estado al cierre de Fase 3
 
@@ -23,7 +28,7 @@ metadata:
 
 ## Decisiones de Fase 3 (ver PRP § Aprendizajes 2026-07-03)
 
-1. **Owner inmutable vía UI + roles asignables acotados a admin|staff** (anti-lockout · SD-cos-11 · **a confirmar con user en paso 4:** ¿MVP necesita multi-owner/transferencia?).
+1. **Owner inmutable vía UI + roles asignables acotados a admin|staff** (anti-lockout · SD-cos-11 · 🔵 **firmada user opción A · 2026-07-03** · multi-owner/transferencia descartados para el MVP).
 2. **`requireRole` bloquea con redirect al dashboard** (no 403 literal · evita `forbidden()` experimental). `requireMembership` no-miembro → `notFound()` (asimetría deliberada).
 3. **`cache()`** en `getSessionUser`/`getActiveMemberships` (dedup por request · layout + page).
 4. **Guard de slugs reservados** (colisión `/{orgSlug}` con rutas estáticas · fix in-scope + unit test).
@@ -36,12 +41,11 @@ metadata:
 - SQL: `set -a; . ./.env.local; set +a` antes. e2e: `global-setup` carga `.env.local` + webServer `npm run dev` (reuseExistingServer).
 - Matar `next dev`/`next-server` colgados antes de `typecheck` (race `.next/dev/types`).
 
-## Qué falta (Fase 4 · validación final)
+## Fase 4 · cerrada (validación final)
 
-- Correr suite completo (`tests/sql/*` + `tests/e2e/regression/*`) · smoke visual Playwright MCP (login · onboarding · dashboard · members gate · switcher · incl. happy-path magic-link G5/DT-003).
-- Guard constraint #10: `grep -r "SERVICE_ROLE" src/` → 0 matches.
-- Confirmar G1..G10 · contador tests-vs-meta 10-20.
-- COVERAGE.md ya actualizado en Fase 3 (filas rbac-and-orgs + slug).
+- ✅ Suite completo verde (SQL 7/7 · e2e 8/8 · unit 5/5) · G1 idempotencia · guard #10 (0 `SERVICE_ROLE` en `src/`) · smoke visual (login/select-org/dashboard/members).
+- ✅ G1..G10 confirmados · contador ~17 tests (meta 10-20) · COVERAGE.md actualizado (rbac-and-orgs + slug).
+- Pendiente del flujo: **paso 4 `/revisar`** → paso 5 `/validar` → paso 6 `/entregar`.
 
 ## Refs
 

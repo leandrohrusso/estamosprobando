@@ -1,6 +1,6 @@
 # PRP-002 · Auth + organizaciones + memberships + RLS base
 
-> **Estado**: APROBADO
+> **Estado**: EN PROGRESO (paso 3 cerrado · 4 + 5 + 6 pendientes)
 > **Fecha**: 2026-07-01
 > **Proyecto**: PUERTITA
 > **Tipo**: feature producto
@@ -13,7 +13,7 @@
 > **Progreso del flujo de 6 pasos:**
 > 1. ☑ `/arrancar`
 > 2. ☑ `/planificar` → APROBADO (2026-07-01 · 5 bifurcaciones firmadas 🔵 user)
-> 3. ☐ `/implementar` (3/4 fases · Fase 3 cerrada)
+> 3. ☑ `/implementar` (4/4 fases · paso 3 cerrado · validación final G1–G10 verde)
 > 4. ☐ `/revisar`
 > 5. ☐ `/validar` (CSV)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
@@ -44,16 +44,16 @@ Establecer la fundación de identidad y aislamiento multi-tenant de PUERTITA: lo
 
 ### Criterios de Éxito (binarios verificables · prefijo G1...)
 
-- [ ] **G1 · Schema + RLS aplicados e idempotentes** · `bash scripts/test-migrations.sh` verde (aplica migraciones 2× · dumps idénticos).
-- [ ] **G2 · Aislamiento cross-tenant** · `tests/sql/PRP-002-rls-isolation.sql` verde: un usuario de la org A obtiene 0 filas de la org B en `organizations` y `memberships`.
-- [ ] **G3 · Helpers RLS correctos** · `is_member_of(org)` y `has_role(org, roles)` retornan el booleano esperado según memberships `active` (test SQL).
+- [x] **G1 · Schema + RLS aplicados e idempotentes** · `bash scripts/test-migrations.sh` verde (Fase 4 · 2 pasadas · dumps idénticos).
+- [x] **G2 · Aislamiento cross-tenant** · `tests/sql/PRP-002-rls-isolation.sql` verde (suite SQL 7/7 · Fase 4): un usuario de la org A obtiene 0 filas de la org B.
+- [x] **G3 · Helpers RLS correctos** · `tests/sql/PRP-002-helpers-and-rpcs.sql` verde (Fase 4): `is_member_of`/`has_role` retornan el booleano esperado.
 - [x] **G4 · Onboarding** · e2e (Fase 2): usuario nuevo sin org → pantalla "crear organización" → al confirmar existe 1 fila `organizations` + 1 `memberships` con `role='owner'`, `status='active'` · slug determinístico validado.
 - [~] **G5 · Magic link** · Fase 2 · **parcial**: el callback (`/auth/confirm`) establece sesión y redirige según membership → ✅ probado end-to-end por G4 vía el route real. El form de login (validación + estructura) ✅ probado. El happy-path "form→enviado" (envío real de email) → diferido a **DT-003** (SMTP built-in rate-limited · disparador TASK-008 Resend) · cubierto por smoke visual Fase 4 + manual.
 - [x] **G6 · RBAC gate** · e2e (Fase 3): un `staff` que navega a `/members` es **redirigido** a su dashboard (bloqueado · `requireRole` · ver Aprendizajes sobre 403 vs redirect) · un `owner` la ve.
 - [x] **G7 · Selección de organización** · e2e (Fase 3): usuario con ≥2 memberships ve `/select-organization` y con el `org-switcher` cambia el contexto (`/{org-slug}/dashboard`).
 - [x] **G8 · Alta de miembro por email** · e2e (Fase 3): Owner da de alta email+rol → `membership` `pending` (user_id NULL) → al loguear esa persona, se vincula (`user_id` seteado, `status='active'`) y aterriza en el dashboard sin acceso a `/members`.
-- [ ] **G9 · DT-001 cerrada** · `run-sql-tests.sh` usa `TEST_DATABASE_URL` (grep no encuentra `DATABASE_URL` como var de conexión) · suite SQL corre real.
-- [ ] **G10 · Cobertura DoD** · 10-20 tests nuevos entre `tests/sql/` y `tests/e2e/regression/` (regla #17) · `npm run typecheck` + `npm run build` verdes.
+- [x] **G9 · DT-001 cerrada** · `run-sql-tests.sh` usa `TEST_DATABASE_URL` (cerrada en Fase 1 · suite SQL corre real 7/7 en Fase 4).
+- [x] **G10 · Cobertura DoD** · ~17 tests nuevos (7 e2e + 4 unit + 2 specs SQL con G2/G3) · `npm run typecheck` + `npm run build` verdes · dentro de meta 10-20.
 
 ### Comportamiento Esperado (Happy Paths)
 
@@ -473,7 +473,7 @@ END; $$;
 
 ### [2026-07-03] Fase 3 · Owner inmutable vía UI + roles asignables acotados a admin|staff (anti-lockout)
 
-- **Decisión (SD-cos-11 · agente · rec early · pendiente confirmación user en paso 4):** `addMember`/`changeRole` solo asignan `admin`|`staff` (`assignableRoleSchema`) · el rol Owner se obtiene **solo** en el onboarding (creador de la org · SD-cos-1) y es **inmutable** desde la gestión de miembros (`removeMember`/`changeRole` rechazan targets con `role='owner'`). 
+- **Decisión (SD-cos-11 · 🔵 Owner único e inmutable · firmada user opción A · 2026-07-03):** `addMember`/`changeRole` solo asignan `admin`|`staff` (`assignableRoleSchema`) · el rol Owner se obtiene **solo** en el onboarding (creador de la org · SD-cos-1) y es **inmutable** desde la gestión de miembros (`removeMember`/`changeRole` rechazan targets con `role='owner'`). Multi-owner/transferencia descartados para el MVP (follow-up chico si aparece demanda real).
 - **Por qué:** garantiza que ninguna acción de gestión pueda dejar la org **sin Owner** (lockout: sin Owner nadie puede gestionar miembros ni editar la org · `org_update`/`mbr_write` son owner-gated). Alternativa "permitir owners + guard de último owner" requiere contar owners en cada baja/cambio · más lógica y casos borde. La versión acotada es KISS y cubre el MVP.
 - **Tradeoff / reversibilidad:** hoy no hay co-owners ni transferencia de propiedad · agregarlos sería un follow-up chico (sumar `owner` al enum asignable + guard de último owner + transferencia). **A confirmar con el user en `/revisar`:** ¿el MVP necesita multi-owner / transferencia, o alcanza con Owner único inmutable?
 
@@ -494,3 +494,15 @@ END; $$;
 ### [2026-07-03] Fase 3 · Cierre · cobertura de tests
 
 - **DoD Fase 3:** 4 specs e2e nuevos (`PRP-002-rbac-and-orgs.spec.ts` · G6/G7/G8 + CRUD) + 4 unit (`PRP-002-slug.test.ts`) · typecheck + build verdes · suite e2e 8/8 + SQL 7/7 + unit 5/5. Fase 3 no agregó DDL (schema/RLS/RPCs de Fase 1 ya cubren members owner-gated) · idempotencia G1 sin delta. Contador acumulado vs meta 10-20 se cierra en Fase 4 (validación final).
+
+### [2026-07-03] Fase 4 · Ordenar por columna enum usa el orden de declaración, no alfabético
+
+- **Hallazgo (smoke visual):** `getOrgMembers` ordenaba `.order('status')` con la asunción "'active' < 'pending' alfabéticamente" · pero Postgres ordena los **enums por su orden de declaración** (`membership_status AS ENUM ('pending','active')` → `pending` primero). El comentario del código quedaba mintiendo (decía "activos antes que pendientes" · salían pendientes primero).
+- **Fix (in-scope · Fase 4):** orden explícito en JS (pendientes primero · piden acción · luego activos, por email) · sin acoplar el sort UI al orden de declaración del enum. typecheck+build+e2e re-verdes.
+- **Aplicar en:** cualquier `ORDER BY <columna_enum>` futuro (estados de eventos/órdenes en TASK-003+) · si el orden importa para UX, hacerlo explícito (CASE/JS), no confiar en el orden del enum.
+
+### [2026-07-03] Fase 4 · Validación final · paso 3 cerrado
+
+- **G1–G10 verde:** guard #10 (`grep -r SERVICE_ROLE src/` → 0 · solo en `tests/e2e/auth-session.ts`) · G1 idempotencia (`test-migrations.sh` · 2 pasadas dumps idénticos) · G2/G3 suite SQL 7/7 · G4–G8 e2e 8/8 · G9 (`TEST_DATABASE_URL` · DT-001 cerrada Fase 1) · G10 ~17 tests · typecheck+build verdes.
+- **Smoke visual:** Playwright MCP no conectado en la sesión → adaptación con el runner de Playwright (mismo browser real) + screenshots leídos por el agente. Login · select-organization · dashboard (nav + switcher + rol) · members (alta + owner inmutable "· vos" sin controles + estados pending/active) renderizan OK. Se re-confirmó DT-005 (contraste de tokens en tema claro · ya registrada · fuera de scope).
+- **Header PRP → `EN PROGRESO (paso 3 cerrado · 4 + 5 + 6 pendientes)`** (NO `COMPLETADO` · reservado a post-merge paso 6). Próximo: paso 4 `/revisar`.

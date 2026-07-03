@@ -78,8 +78,12 @@ export type OrgMember = {
 /**
  * Miembros de una organización (activos + `pending`) para la pantalla de
  * gestión. RLS (`mbr_select`) ya restringe la lectura a miembros activos de la
- * org · el caller (`/members`) además exige rol Owner (`requireRole`). Ordena
- * activos antes que pendientes, y por email dentro de cada grupo.
+ * org · el caller (`/members`) además exige rol Owner (`requireRole`).
+ *
+ * Orden: **pendientes primero** (invitaciones sin vincular · piden acción),
+ * luego activos, y por email dentro de cada grupo. El orden se hace en JS y no
+ * en la BD a propósito: ordenar por la columna `status` usa el orden de
+ * declaración del enum (`pending` < `active`), un acoplamiento frágil al schema.
  */
 export async function getOrgMembers(
   organizationId: string,
@@ -91,18 +95,23 @@ export async function getOrgMembers(
     .from('memberships')
     .select('id, email, role, status, user_id')
     .eq('organization_id', organizationId)
-    .order('status', { ascending: true }) // 'active' < 'pending' alfabéticamente
     .order('email', { ascending: true })
 
   if (error) {
     throw new Error(`getOrgMembers: ${error.message}`)
   }
 
-  return (data ?? []).map((row) => ({
+  const members: OrgMember[] = (data ?? []).map((row) => ({
     id: row.id as string,
     email: row.email as string,
     role: row.role as MembershipRole,
     status: row.status as 'pending' | 'active',
     isSelf: Boolean(user && row.user_id === user.id),
   }))
+
+  // Pendientes primero (piden acción) · email ya viene ordenado de la BD.
+  return members.sort((a, b) => {
+    if (a.status === b.status) return 0
+    return a.status === 'pending' ? -1 : 1
+  })
 }
