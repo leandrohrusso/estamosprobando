@@ -47,6 +47,13 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.memberships   TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_member_of(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.has_role(UUID, public.membership_role[]) TO authenticated;
 
+-- service_role (bypassa RLS · Edge Functions server-side + helper de sesión de
+-- test/CI · constraint #10). Explícito y NO por default privileges: el reset de
+-- schema de `test-migrations.sh` (DROP SCHEMA CASCADE · DT-002) borra los grants
+-- implícitos · la migración debe ser autosuficiente. GRANT es idempotente.
+GRANT ALL ON public.organizations TO service_role;
+GRANT ALL ON public.memberships   TO service_role;
+
 -- RLS ----------------------------------------------------------------
 ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.memberships   ENABLE ROW LEVEL SECURITY;

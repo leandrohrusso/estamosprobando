@@ -48,6 +48,8 @@ Cuando el CSV de `/validar` genera specs nuevos vía regression-first FIRME (reg
 | Archivo / Tabla | PRP origen | Spec(s) que cubre | Tipo | Estado |
 |---|---|---|---|---|
 | `src/app/layout.tsx` · `src/app/page.tsx` | PRP-001 | `tests/e2e/regression/prp-001-scaffold.spec.ts` — la home responde 200 y rinde el placeholder de PUERTITA (scaffold smoke · sin DB) | E2E | ✅ activo |
+| `src/app/(auth)/login/*` · `src/app/auth/confirm/route.ts` · `src/app/(auth)/onboarding/*` · `src/lib/auth/*` · `src/proxy.ts` · `src/lib/supabase/middleware.ts` | PRP-002 | `tests/e2e/regression/PRP-002-auth-onboarding.spec.ts` — login (form magic link + validación) · onboarding vía route real `/auth/confirm` → Owner (G4/G5) | E2E | ✅ activo |
+| tablas `organizations` · `memberships` (RLS + helpers + RPCs) | PRP-002 | `tests/sql/PRP-002-rls-isolation.sql` (aislamiento cross-tenant · G2) · `tests/sql/PRP-002-helpers-and-rpcs.sql` (`is_member_of`/`has_role`/RPCs · G3/G4/G8) | sql | ✅ activo |
 
 ---
 

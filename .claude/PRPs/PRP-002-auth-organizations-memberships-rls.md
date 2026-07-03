@@ -13,7 +13,7 @@
 > **Progreso del flujo de 6 pasos:**
 > 1. ☑ `/arrancar`
 > 2. ☑ `/planificar` → APROBADO (2026-07-01 · 5 bifurcaciones firmadas 🔵 user)
-> 3. ☐ `/implementar` (1/4 fases · Fase 1 cerrada)
+> 3. ☐ `/implementar` (2/4 fases · Fase 2 cerrada)
 > 4. ☐ `/revisar`
 > 5. ☐ `/validar` (CSV)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
@@ -47,8 +47,8 @@ Establecer la fundación de identidad y aislamiento multi-tenant de PUERTITA: lo
 - [ ] **G1 · Schema + RLS aplicados e idempotentes** · `bash scripts/test-migrations.sh` verde (aplica migraciones 2× · dumps idénticos).
 - [ ] **G2 · Aislamiento cross-tenant** · `tests/sql/PRP-002-rls-isolation.sql` verde: un usuario de la org A obtiene 0 filas de la org B en `organizations` y `memberships`.
 - [ ] **G3 · Helpers RLS correctos** · `is_member_of(org)` y `has_role(org, roles)` retornan el booleano esperado según memberships `active` (test SQL).
-- [ ] **G4 · Onboarding** · e2e: usuario nuevo sin org → pantalla "crear organización" → al confirmar existe 1 fila `organizations` + 1 `memberships` con `role='owner'`, `status='active'`.
-- [ ] **G5 · Magic link** · e2e: la página de login envía el magic link (form submit → estado "revisá tu email") · el callback establece sesión y redirige según membership.
+- [x] **G4 · Onboarding** · e2e (Fase 2): usuario nuevo sin org → pantalla "crear organización" → al confirmar existe 1 fila `organizations` + 1 `memberships` con `role='owner'`, `status='active'` · slug determinístico validado.
+- [~] **G5 · Magic link** · Fase 2 · **parcial**: el callback (`/auth/confirm`) establece sesión y redirige según membership → ✅ probado end-to-end por G4 vía el route real. El form de login (validación + estructura) ✅ probado. El happy-path "form→enviado" (envío real de email) → diferido a **DT-003** (SMTP built-in rate-limited · disparador TASK-008 Resend) · cubierto por smoke visual Fase 4 + manual.
 - [ ] **G6 · RBAC gate** · e2e: un usuario `staff` que navega a la página de gestión de miembros es redirigido/bloqueado (403) · un `owner` la ve.
 - [ ] **G7 · Selección de organización** · e2e: usuario con ≥2 memberships ve el selector y al cambiar de org cambia el contexto (`/{org-slug}/...`).
 - [ ] **G8 · Alta de miembro por email** · e2e/SQL: Owner da de alta email+rol → `membership` `pending` (user_id NULL) → al hacer login esa persona, se vincula (`user_id` seteado, `status='active'`).
@@ -442,3 +442,21 @@ END; $$;
 - **Root cause:** `DROP SCHEMA public CASCADE` del reset cascadea al event-trigger global `ensure_rls` (depende de `rls_auto_enable`, que vive en `public`).
 - **Fix:** out-of-scope (tooling del pack) → **DT-002** registrada. Mitigación en el PRP: RLS explícito por tabla + invariante `rls-invariants.sql` verde. Cero restauración de `ensure_rls` (objeto Supabase-managed sin fuente propia).
 - **Aplicar en:** endurecer `test-migrations.sh` en un mini-PRP de infra futuro (disparador de DT-002).
+
+### [2026-07-02] Fase 2 · Next 16 deprecó `middleware.ts` → convención `proxy.ts`
+- **Error:** `next build` emitió `The "middleware" file convention is deprecated. Please use "proxy" instead.`
+- **Root cause:** Next.js 16 renombró la convención `middleware` → `proxy` (misma semántica edge · [docs](https://nextjs.org/docs/messages/middleware-to-proxy)) · verificado contra docs oficiales (regla no-suponer).
+- **Fix:** `src/middleware.ts` → `src/proxy.ts` + función `middleware` → `proxy` (behavior-preserving · SD-cos-7 thin session-refresh intacto). El helper interno `src/lib/supabase/middleware.ts` (nuestro `updateSession`) queda con ese nombre (no es archivo-convención de Next). El inventario del PRP dice `src/middleware.ts` (superado por la versión instalada de Next). Firmado implícito al aprobar el fix mecánico de versión.
+- **Aplicar en:** cualquier PRP futuro que toque el proxy · gotcha de tooling nivel 1 (específico al stack de este proyecto).
+
+### [2026-07-02] Fase 2 · `service_role` sin GRANT de tabla tras schema reset (rompe helper de test)
+- **Error:** el helper de sesión e2e (rol `service_role`) recibía `permission denied for table memberships` (`42501`) al leer `memberships`/`organizations` · G4 fallaba con membership `null`.
+- **Root cause:** en Supabase real `service_role` recibe privilegios por default privileges del schema `public` · el reset `DROP SCHEMA CASCADE` de `test-migrations.sh` (DT-002) los borra · la migración `0002` sólo re-otorgaba a `authenticated` (no a `service_role`). La app (rol `authenticated`) nunca se vio afectada · sólo el helper de test (constraint #10: `service_role` solo test/CI + Edge).
+- **Fix:** `GRANT ALL ON public.{organizations,memberships} TO service_role` explícito en `0002` (idempotente · production-safe · robusto ante schema reset · no depende de default privileges implícitos). Re-aplicado a TEST DB · idempotencia (`test-migrations.sh`) + suite SQL 7/7 verdes.
+- **Aplicar en:** toda tabla futura consumida por Edge Functions server-side (webhooks de pago · TASK-007) o por helpers de test admin → GRANT explícito a `service_role` en la migración, no confiar en default privileges. Regression-first: G4 e2e reproduce (fallaba pre-fix · pasa post-fix).
+
+### [2026-07-02] Fase 2 · G5 happy-path (envío real de magic link) no automatizable en CI → DT-003
+- **Error:** el test de "form→Revisá tu email" fallaba: `signInWithOtp` rechaza el TLD `.test` (`email_address_invalid`) y el SMTP built-in de Supabase rate-limitea a ~2/hora (`429 over_email_send_rate_limit`).
+- **Root cause:** el envío real de email depende del SMTP built-in de Supabase (bajo límite · sin SMTP propio hasta TASK-008/Resend) · no es un bug de código.
+- **Fix:** **escalado al user** (regla `always-fix-all-bugs` § excepción · servicio externo no integrado) → firma 🔵 **opción A**: **DT-003**. Spec G5 automatizado queda determinístico (validación de form + estructura) · el pipeline de auth end-to-end lo prueba G4 vía el route real `/auth/confirm` · el happy-path "form→enviado" se cubre en el smoke visual de Fase 4 + manual · re-habilitación automatizada al integrar SMTP propio (TASK-008).
+- **Aplicar en:** cualquier feature futura que dependa de envío de email transaccional (tickets · TASK-008) · no acoplar tests automatizados al SMTP built-in rate-limited.
