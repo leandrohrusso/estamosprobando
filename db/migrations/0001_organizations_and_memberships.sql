@@ -55,5 +55,16 @@ ALTER TABLE public.memberships DROP CONSTRAINT IF EXISTS memberships_organizatio
 CREATE UNIQUE INDEX IF NOT EXISTS uq_memberships_org_lower_email
   ON public.memberships(organization_id, lower(email));
 
+-- Clave de idempotencia del onboarding (LR-002 lr_bug_008): el request de creación
+-- de organización lleva un UUID estable por submit · create_organization_with_owner
+-- reusa la org ya creada si el mismo (user, request) reintenta (double-submit /
+-- retry tras respuesta perdida) en vez de crear una 2ª org. NULL en las memberships
+-- que no vienen del onboarding (alta por email · Bif 3=A). El índice único parcial
+-- serializa dos requests concurrentes con la misma clave (backstop del fast-path).
+ALTER TABLE public.memberships ADD COLUMN IF NOT EXISTS idempotency_key UUID;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_memberships_user_idempotency
+  ON public.memberships(user_id, idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
+
 COMMENT ON TABLE public.organizations IS 'Tenant. Cada dato de negocio pertenece a exactamente una organización (PRD §3.1).';
 COMMENT ON TABLE public.memberships   IS 'Relación usuario↔org con rol. RLS lee la pertenencia vía esta tabla (PRP-002).';

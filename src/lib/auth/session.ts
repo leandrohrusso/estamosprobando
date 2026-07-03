@@ -37,9 +37,7 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
  * `cache()` de React: dedup por request (layout + page + org-switcher comparten
  * el resultado).
  */
-export const getActiveMemberships = cache(async (): Promise<
-  ActiveMembership[]
-> => {
+async function fetchActiveMemberships(): Promise<ActiveMembership[]> {
   const supabase = await createClient()
   const user = await getSessionUser()
   if (!user) return []
@@ -70,4 +68,11 @@ export const getActiveMemberships = cache(async (): Promise<
       name: org.name as string,
     }
   })
-})
+}
+
+// Wrapper cacheado por request (dedup layout + page + org-switcher). La lógica vive
+// en `fetchActiveMemberships` (exportada para regresión unit · LR-002 lr_bug_005:
+// el error real NO se colapsa a `[]`) porque `cache()` solo corre en contexto RSC.
+export const getActiveMemberships = cache(fetchActiveMemberships)
+
+export { fetchActiveMemberships }

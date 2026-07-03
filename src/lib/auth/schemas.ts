@@ -18,6 +18,9 @@ export const createOrganizationSchema = z.object({
     .trim()
     .min(2, { message: 'El nombre debe tener al menos 2 caracteres.' })
     .max(80, { message: 'El nombre no puede superar los 80 caracteres.' }),
+  // Clave de idempotencia estable por submit (LR-002 lr_bug_008): un retry del
+  // mismo alta reusa esta clave → la RPC no crea una 2ª org. La genera el form.
+  requestId: z.guid({ message: 'Sesión inválida. Recargá la página.' }),
 })
 export type CreateOrganizationInput = z.infer<typeof createOrganizationSchema>
 

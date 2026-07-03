@@ -137,3 +137,48 @@ BEGIN
   RAISE NOTICE 'OK G-write.7 · staff no-owner de A NO puede escribir memberships (owner-gate)';
 END $$;
 ROLLBACK;
+
+-- ===========================================================================
+-- Invariante single-owner a nivel RLS (LR-002 lr_bug_002). El Owner es INMUTABLE
+-- vía escritura directa (PostgREST/SQL): mbr_write tiene `role <> 'owner'` en USING
+-- y WITH CHECK · así un Owner con su JWT legítimo NO puede (a) crear un 2º Owner,
+-- (b) promover a alguien a Owner, ni (c) borrar/mutar al Owner. La app ya lo impide
+-- (assignableRoleSchema + .neq('role','owner')) · esto es la última red.
+-- ===========================================================================
+
+-- Escenario 8 · owner de A NO puede auto-concederse/promover/borrar un Owner --
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-000000001001','email','owner-a@test.puertita')::text, true);
+DO $$
+DECLARE org_a UUID := '00000000-0000-0000-0000-00000000a001'; blocked boolean; n int;
+BEGIN
+  -- (a) INSERT de un 2º Owner en A → WITH CHECK role<>'owner' lo rechaza.
+  blocked := false;
+  BEGIN
+    INSERT INTO public.memberships (organization_id, email, role, status)
+    VALUES (org_a, 'segundo-owner@test.puertita', 'owner', 'active');
+  EXCEPTION WHEN insufficient_privilege THEN blocked := true;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'FAIL: owner de A pudo crear un 2º Owner via escritura directa'; END IF;
+
+  -- (b) promover un staff a Owner → WITH CHECK del NEW row lo rechaza.
+  INSERT INTO public.memberships (organization_id, email, role, status)
+  VALUES (org_a, 'staff-promote@test.puertita', 'staff', 'pending'); -- alta permitida
+  blocked := false;
+  BEGIN
+    UPDATE public.memberships SET role = 'owner'
+     WHERE organization_id = org_a AND email = 'staff-promote@test.puertita';
+  EXCEPTION WHEN insufficient_privilege THEN blocked := true;
+  END;
+  IF NOT blocked THEN RAISE EXCEPTION 'FAIL: owner de A pudo promover un staff a Owner'; END IF;
+
+  -- (c) borrar al Owner (su propia fila) → USING role<>'owner' la filtra → 0 filas.
+  DELETE FROM public.memberships WHERE organization_id = org_a AND role = 'owner';
+  GET DIAGNOSTICS n = ROW_COUNT;
+  IF n <> 0 THEN RAISE EXCEPTION 'FAIL: owner de A pudo borrar al Owner via escritura directa (% filas)', n; END IF;
+
+  RAISE NOTICE 'OK G-write.8 · mbr_write impide 2º Owner / promoción a Owner / borrado del Owner';
+END $$;
+ROLLBACK;

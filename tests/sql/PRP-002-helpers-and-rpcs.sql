@@ -30,7 +30,8 @@ SELECT set_config('request.jwt.claims',
 DO $$
 DECLARE new_org UUID; owner_cnt int;
 BEGIN
-  new_org := public.create_organization_with_owner('New Org', 'new-org-xyz');
+  new_org := public.create_organization_with_owner('New Org', 'new-org-xyz',
+    '00000000-0000-0000-0000-0000000f0001');
   IF new_org IS NULL THEN RAISE EXCEPTION 'FAIL: RPC no retornó org id'; END IF;
   SELECT count(*) INTO owner_cnt
     FROM public.memberships
@@ -39,6 +40,41 @@ BEGIN
      AND role = 'owner' AND status = 'active';
   IF owner_cnt <> 1 THEN RAISE EXCEPTION 'FAIL: user3 no quedó owner activo (got %)', owner_cnt; END IF;
   RAISE NOTICE 'OK G4 · create_organization_with_owner crea org + membership owner activo';
+END $$;
+ROLLBACK;
+
+-- G4.idem · create_organization_with_owner es IDEMPOTENTE por request (LR-002
+-- lr_bug_008): un double-submit / retry con el MISMO p_request_id devuelve la org ya
+-- creada en vez de crear una segunda. Con distinto request_id sí crea otra (preserva
+-- multi-org · la clave es (user, request), no "0 memberships").
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','00000000-0000-0000-0000-000000001003','email','new@test.puertita')::text, true);
+DO $$
+DECLARE org1 UUID; org2 UUID; org3 UUID; total int;
+        req_a UUID := '00000000-0000-0000-0000-0000000f00aa';
+        req_b UUID := '00000000-0000-0000-0000-0000000f00bb';
+BEGIN
+  -- Dos llamadas con la MISMA clave → misma org (idempotente).
+  org1 := public.create_organization_with_owner('Idem Org', 'idem-org', req_a);
+  org2 := public.create_organization_with_owner('Idem Org', 'idem-org-2', req_a);
+  IF org1 <> org2 THEN
+    RAISE EXCEPTION 'FAIL idempotencia: mismo request_id creó 2 orgs distintas (% <> %)', org1, org2;
+  END IF;
+
+  -- Una llamada con OTRA clave → org distinta (no rompe multi-org).
+  org3 := public.create_organization_with_owner('Otra Org', 'otra-org', req_b);
+  IF org3 = org1 THEN
+    RAISE EXCEPTION 'FAIL: distinto request_id debería crear una org nueva';
+  END IF;
+
+  -- El usuario quedó con exactamente 2 orgs owner (la idempotente + la nueva).
+  SELECT count(*) INTO total FROM public.memberships
+   WHERE user_id = '00000000-0000-0000-0000-000000001003' AND role = 'owner';
+  IF total <> 2 THEN RAISE EXCEPTION 'FAIL: se esperaban 2 orgs owner (got %)', total; END IF;
+
+  RAISE NOTICE 'OK G4.idem · idempotencia por (user, request) · multi-org preservado';
 END $$;
 ROLLBACK;
 

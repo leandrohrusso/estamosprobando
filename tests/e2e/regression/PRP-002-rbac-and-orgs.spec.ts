@@ -75,8 +75,10 @@ test('G7 · usuario multi-org elige y cambia de organización', async ({
     await expect(page).toHaveURL(new RegExp(`/${slug1}/dashboard$`))
     await expect(page.getByRole('heading', { name: name1 })).toBeVisible()
 
-    // Cambia a la segunda con el switcher → cambia el contexto de tenant.
+    // Cambia a la segunda con el switcher → elige y confirma (la navegación es al
+    // submit explícito, no en el onChange · LR-002 lr_bug_004).
     await page.getByLabel('Cambiar de organización').selectOption(slug2)
+    await page.getByRole('button', { name: 'Cambiar' }).click()
     await expect(page).toHaveURL(new RegExp(`/${slug2}/dashboard$`))
     await expect(page.getByRole('heading', { name: name2 })).toBeVisible()
   } finally {
@@ -143,8 +145,10 @@ test('CRUD · owner cambia el rol y quita a un miembro', async ({ page }) => {
     await page.goto(`/${slug}/members`)
     await expect(page.getByText(memberEmail)).toBeVisible()
 
-    // Cambia el rol staff → admin (el select de la fila auto-submitea).
+    // Cambia el rol staff → admin: elige y confirma con "Guardar" (submit explícito ·
+    // ya no auto-submitea en onChange · LR-002 lr_bug_004).
     await page.getByLabel(`Rol de ${memberEmail}`).selectOption('admin')
+    await page.getByRole('button', { name: `Guardar rol de ${memberEmail}` }).click()
     await expect
       .poll(async () => (await getOrgMembership(orgId, memberEmail))?.role)
       .toBe('admin')

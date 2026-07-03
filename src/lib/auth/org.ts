@@ -76,6 +76,20 @@ export type OrgMember = {
 }
 
 /**
+ * Ordena los miembros con los **pendientes primero** (invitaciones sin vincular ·
+ * piden acción), preservando el orden previo (por email) dentro de cada grupo. Puro
+ * y estable (no muta el input). Se hace en JS y NO por la columna `status` de la BD
+ * a propósito: `ORDER BY status` usa el orden de declaración del enum
+ * (`pending` < `active`), un acoplamiento frágil al schema (LR-002 orden pending-first).
+ */
+export function sortMembersPendingFirst(members: OrgMember[]): OrgMember[] {
+  return [...members].sort((a, b) => {
+    if (a.status === b.status) return 0
+    return a.status === 'pending' ? -1 : 1
+  })
+}
+
+/**
  * Miembros de una organización (activos + `pending`) para la pantalla de
  * gestión. RLS (`mbr_select`) ya restringe la lectura a miembros activos de la
  * org · el caller (`/members`) además exige rol Owner (`requireRole`).
@@ -110,8 +124,5 @@ export async function getOrgMembers(
   }))
 
   // Pendientes primero (piden acción) · email ya viene ordenado de la BD.
-  return members.sort((a, b) => {
-    if (a.status === b.status) return 0
-    return a.status === 'pending' ? -1 : 1
-  })
+  return sortMembersPendingFirst(members)
 }

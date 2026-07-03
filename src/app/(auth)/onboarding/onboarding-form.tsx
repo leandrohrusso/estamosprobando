@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { createOrganization, type OnboardingState } from './actions'
 import {
   Card,
@@ -21,6 +21,15 @@ export function OnboardingForm() {
     initialState,
   )
 
+  // Clave de idempotencia estable por montaje del form (LR-002 lr_bug_008): un
+  // retry del mismo submit (doble click / reintento tras respuesta perdida) reusa
+  // esta clave → la RPC no crea una 2ª org. Se genera en efecto (post-mount) para no
+  // romper la hidratación (el server no puede producir el mismo UUID random).
+  const [requestId, setRequestId] = useState('')
+  useEffect(() => {
+    setRequestId(crypto.randomUUID())
+  }, [])
+
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
@@ -32,6 +41,7 @@ export function OnboardingForm() {
       </CardHeader>
       <CardContent>
         <form action={formAction} className="flex flex-col gap-4" noValidate>
+          <input type="hidden" name="requestId" value={requestId} />
           <div className="flex flex-col gap-2">
             <Label htmlFor="name">Nombre de la organización</Label>
             <Input
@@ -56,7 +66,7 @@ export function OnboardingForm() {
               {state.message}
             </p>
           ) : null}
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending || !requestId}>
             {pending ? 'Creando…' : 'Crear organización'}
           </Button>
         </form>

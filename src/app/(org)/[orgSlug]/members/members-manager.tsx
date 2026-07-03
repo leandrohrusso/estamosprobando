@@ -111,14 +111,17 @@ export function MembersManager({
               </span>
             ) : (
               <div className="flex items-center gap-2">
-                <form action={changeRole}>
+                {/* La mutación de rol ocurre solo al confirmar (botón "Guardar"),
+                    NO en el onChange del select (LR-002 lr_bug_004 · WCAG 3.2.2):
+                    recorrer opciones con teclado no debe mutar el rol de otra persona
+                    sin intención. */}
+                <form action={changeRole} className="flex items-center gap-2">
                   <input type="hidden" name="orgSlug" value={orgSlug} />
                   <input type="hidden" name="membershipId" value={member.id} />
                   <select
                     name="role"
                     defaultValue={member.role}
                     aria-label={`Rol de ${member.email}`}
-                    onChange={(e) => e.currentTarget.form?.requestSubmit()}
                     className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background"
                   >
                     {ASSIGNABLE_ROLES.map((r) => (
@@ -127,6 +130,14 @@ export function MembersManager({
                       </option>
                     ))}
                   </select>
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Guardar rol de ${member.email}`}
+                  >
+                    Guardar
+                  </Button>
                 </form>
                 <form action={removeMember}>
                   <input type="hidden" name="orgSlug" value={orgSlug} />

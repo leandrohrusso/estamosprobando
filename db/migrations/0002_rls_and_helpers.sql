@@ -78,8 +78,24 @@ CREATE POLICY mbr_select ON public.memberships
   FOR SELECT TO authenticated
   USING (user_id = auth.uid() OR public.is_member_of(organization_id));
 
+-- Escritura owner-gated + Owner INMUTABLE a nivel RLS (LR-002 lr_bug_002):
+-- el invariante single-owner (SD-cos-11 · anti-lockout) NO puede vivir solo en las
+-- Server Actions · un Owner con su JWT legítimo podría, vía PostgREST directo,
+-- auto-concederse un 2º Owner, promover a alguien a Owner, o borrar/mutar al Owner
+-- (rompiendo el modelo). `role <> 'owner'` en USING **y** WITH CHECK cierra las
+-- cuatro vías (INSERT/UPDATE del NEW row · UPDATE/DELETE del OLD row):
+--   - USING role<>'owner'      → no se puede UPDATE ni DELETE la fila del Owner.
+--   - WITH CHECK role<>'owner' → no se puede INSERT ni promover a Owner.
+-- El Owner se crea SOLO vía la RPC create_organization_with_owner (SECURITY DEFINER ·
+-- bypassa RLS). Esta policy es la última red · paridad con el guard app `.neq('role','owner')`.
 DROP POLICY IF EXISTS mbr_write ON public.memberships;
 CREATE POLICY mbr_write ON public.memberships
   FOR ALL TO authenticated
-  USING (public.has_role(organization_id, ARRAY['owner']::public.membership_role[]))
-  WITH CHECK (public.has_role(organization_id, ARRAY['owner']::public.membership_role[]));
+  USING (
+    public.has_role(organization_id, ARRAY['owner']::public.membership_role[])
+    AND role <> 'owner'
+  )
+  WITH CHECK (
+    public.has_role(organization_id, ARRAY['owner']::public.membership_role[])
+    AND role <> 'owner'
+  );

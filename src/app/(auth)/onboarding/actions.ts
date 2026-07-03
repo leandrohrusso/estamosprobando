@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createOrganizationSchema } from '@/lib/auth/schemas'
-import { MAX_SLUG_LENGTH, isReservedSlug, slugify } from '@/lib/auth/slug'
+import { isReservedSlug, slugCandidate, slugify } from '@/lib/auth/slug'
 
 export type OnboardingState = {
   status: 'idle' | 'error'
@@ -27,6 +27,7 @@ export async function createOrganization(
 ): Promise<OnboardingState> {
   const parsed = createOrganizationSchema.safeParse({
     name: formData.get('name'),
+    requestId: formData.get('requestId'),
   })
   if (!parsed.success) {
     return { status: 'error', message: parsed.error.issues[0].message }
@@ -48,25 +49,19 @@ export async function createOrganization(
     }
   }
 
-  // Candidato de slug para el intento `n`: `n===1` usa el slug base; a partir de
-  // 2 agrega sufijo `-n` (recortando el base para respetar MAX_SLUG_LENGTH).
-  const candidate = (n: number): string => {
-    if (n === 1) return base
-    const suffix = `-${n}`
-    return `${base.slice(0, MAX_SLUG_LENGTH - suffix.length)}${suffix}`
-  }
-
   // Un base que pisa una ruta reservada de primer nivel (`login`, `auth`, …) se
   // trata como si el bare ya estuviera tomado: se arranca en `-2` (SD-cos-8 +
-  // guard de colisión de rutas de Fase 3).
+  // guard de colisión de rutas de Fase 3). El candidato por intento vive en
+  // `slugCandidate` (pura · testeada · LR-002 unicidad de slug).
   const firstAttempt = isReservedSlug(base) ? 2 : 1
 
   let createdSlug: string | null = null
   for (let n = firstAttempt; n < firstAttempt + MAX_SLUG_ATTEMPTS; n++) {
-    const slug = candidate(n)
+    const slug = slugCandidate(base, n)
     const { error } = await supabase.rpc('create_organization_with_owner', {
       p_name: parsed.data.name,
       p_slug: slug,
+      p_request_id: parsed.data.requestId,
     })
     if (!error) {
       createdSlug = slug

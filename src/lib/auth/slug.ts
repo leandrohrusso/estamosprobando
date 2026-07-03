@@ -38,3 +38,20 @@ export function slugify(name: string): string {
     .slice(0, MAX_SLUG_LENGTH)
     .replace(/-+$/g, '') // el slice pudo cortar dejando un guión colgando
 }
+
+/**
+ * Slug candidato para el intento `n` de creación de org (SD-cos-8):
+ * - `n === 1` → el slug base tal cual.
+ * - `n >= 2` → base + sufijo `-n`, recortando el base para respetar
+ *   MAX_SLUG_LENGTH. Re-trima guiones colgantes del base recortado antes de
+ *   concatenar el sufijo, por si el `slice` cae justo sobre un guión (evita
+ *   `foo--2` · el contrato del slug es guiones simples · LR-002 correctness).
+ *
+ * Pura y determinística: la unicidad real la garantiza `UNIQUE(slug)` en la BD
+ * (el caller reintenta con `n` creciente ante colisión).
+ */
+export function slugCandidate(base: string, n: number): string {
+  if (n === 1) return base
+  const suffix = `-${n}`
+  return `${base.slice(0, MAX_SLUG_LENGTH - suffix.length).replace(/-+$/g, '')}${suffix}`
+}

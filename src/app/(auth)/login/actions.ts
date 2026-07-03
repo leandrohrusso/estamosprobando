@@ -24,7 +24,13 @@ export async function sendMagicLink(
     return { status: 'error', message: parsed.error.issues[0].message }
   }
 
-  const origin = (await headers()).get('origin')
+  // Base del redirect del magic link. Preferimos una constante server-side confiable
+  // (NEXT_PUBLIC_SITE_URL) sobre el header `Origin`, que es controlable por el cliente:
+  // así el token del enlace nunca se ancla a un host que ponga el request (LR-002
+  // lr_bug_007 · defensa que se suma a la allow-list de Redirect URLs de Supabase).
+  // El header queda solo como fallback de desarrollo (sin NEXT_PUBLIC_SITE_URL seteada).
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, '')
+  const origin = configuredSiteUrl ?? (await headers()).get('origin')
   if (!origin) {
     return { status: 'error', message: 'No pudimos resolver el sitio. Probá de nuevo.' }
   }

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getActiveMemberships } from '@/lib/auth/session'
+import { getActiveMemberships, getSessionUser } from '@/lib/auth/session'
 import { resolvePostLoginRedirect } from '@/lib/auth/org'
 import { roleLabel } from '@/lib/auth/roles'
 import {
@@ -18,7 +18,19 @@ import {
  * único dashboard (idempotente si alguien entra directo a la URL).
  */
 export default async function SelectOrganizationPage() {
-  const memberships = await getActiveMemberships()
+  // Paridad con onboarding/page (LR-002 lr_bug_003): gate de sesión + distinguir
+  // "fallo real de la query" de "sin orgs". Sin esto, un error de la query crashea
+  // la página (500) en vez de degradar a /login, y un usuario sin sesión da un hop
+  // indirecto en vez de ir directo a /login.
+  const user = await getSessionUser()
+  if (!user) redirect('/login')
+
+  let memberships
+  try {
+    memberships = await getActiveMemberships()
+  } catch {
+    redirect('/login?error=session')
+  }
 
   if (memberships.length < 2) {
     redirect(resolvePostLoginRedirect(memberships))

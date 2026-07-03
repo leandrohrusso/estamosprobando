@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { slugify, isReservedSlug, RESERVED_SLUGS } from '../../src/lib/auth/slug'
+import {
+  slugify,
+  slugCandidate,
+  isReservedSlug,
+  MAX_SLUG_LENGTH,
+  RESERVED_SLUGS,
+} from '../../src/lib/auth/slug'
 
 // PRP-002 Fase 3 · slug determinístico + guard de slugs reservados. El guard
 // evita que una org tome una ruta estática de primer nivel (`/{orgSlug}/...`
@@ -29,5 +35,33 @@ describe('isReservedSlug', () => {
   it('no marca slugs normales', () => {
     expect(isReservedSlug('productora-la-puerta')).toBe(false)
     expect(isReservedSlug('mi-organizacion')).toBe(false)
+  })
+})
+
+// LR-002 · unicidad de slug: el candidato por intento resuelve colisiones con
+// sufijo `-n` (SD-cos-8). Pura + testeada · antes solo se cubría slugify().
+describe('slugCandidate', () => {
+  it('n=1 devuelve el base sin sufijo', () => {
+    expect(slugCandidate('mi-org', 1)).toBe('mi-org')
+  })
+
+  it('n>=2 agrega sufijo -n (colisión de unicidad)', () => {
+    expect(slugCandidate('mi-org', 2)).toBe('mi-org-2')
+    expect(slugCandidate('mi-org', 3)).toBe('mi-org-3')
+  })
+
+  it('respeta MAX_SLUG_LENGTH recortando el base', () => {
+    const base = 'a'.repeat(MAX_SLUG_LENGTH)
+    const candidate = slugCandidate(base, 2)
+    expect(candidate.length).toBeLessThanOrEqual(MAX_SLUG_LENGTH)
+    expect(candidate.endsWith('-2')).toBe(true)
+  })
+
+  it('no deja doble guión si el recorte cae sobre un guión (foo--2)', () => {
+    // base de 62 chars terminando en guión: slice(0, 61) dejaría el guión colgando.
+    const base = `${'a'.repeat(60)}-b` // 62 chars
+    const candidate = slugCandidate(base, 2)
+    expect(candidate).not.toContain('--')
+    expect(candidate.endsWith('-2')).toBe(true)
   })
 })

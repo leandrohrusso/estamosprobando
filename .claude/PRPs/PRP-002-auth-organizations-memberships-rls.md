@@ -1,6 +1,6 @@
 # PRP-002 · Auth + organizaciones + memberships + RLS base
 
-> **Estado**: EN PROGRESO (paso 3 cerrado · 4 + 5 + 6 pendientes)
+> **Estado**: EN PROGRESO (paso 4 cerrado · 5 + 6 pendientes)
 > **Fecha**: 2026-07-01
 > **Proyecto**: PUERTITA
 > **Tipo**: feature producto
@@ -14,7 +14,7 @@
 > 1. ☑ `/arrancar`
 > 2. ☑ `/planificar` → APROBADO (2026-07-01 · 5 bifurcaciones firmadas 🔵 user)
 > 3. ☑ `/implementar` (4/4 fases · paso 3 cerrado · validación final G1–G10 verde)
-> 4. ☐ `/revisar`
+> 4. ☑ `/revisar` (LR-001 + LR-002 · 9 agentes · 10 normales in-scope LR-002 fixeados con regression-first FIRME + 3 DT · typecheck+build+unit+SQL verdes)
 > 5. ☐ `/validar` (CSV)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
 
@@ -464,6 +464,20 @@ END; $$;
   - **lr_bug_006:** forms sin `aria-invalid`/`aria-describedby`. Fix: atributos + `id` del error en login/onboarding + assertion e2e.
 - **2 diferidos a DT (out-of-scope · firma 🔵 user A):** **DT-004** (rate-limiting propio en `/login` · depende de edge/Resend TASK-008 · hoy defiende el rate-limit del proveedor) · **DT-005** (contraste de tokens del DS en `globals.css` · vive en PRP-001, cross-cutting · oscurecer `--primary` es decisión de la matriz Claude Design).
 - **Verificación post-fix:** idempotencia (`test-migrations.sh`) verde · suite SQL 7/7 verde (write-side + case-insensitive nuevos) · e2e 4/4 verde (aria + G4 con error handling + lower email) · typecheck + build verdes.
+
+### [2026-07-03] Paso 4 `/revisar` LR-002 · 13 normales · 10 fixeados in-scope + 3 DT + 13 nits descartados
+- **Review:** 2ª corrida (full diff Fase 1-4 · 48 archivos · 9 agentes). Consolidator: 0 critical · 13 normal · 13 nits descartados por filtro Bif 6=A. Log: `docs/logs/revisar-log.md § LR-002`. 3 hallazgos con `verified:true` (≥2 detectores + source-read): swallow-error, single-owner RLS, slug inmutable.
+- **10 normales in-scope fixeados (regression-first FIRME · firma 🔵 user):**
+  - **lr_bug_001** (architect·correctness·atomicity) · `members/actions.ts`: `isManageableTarget` re-introducía el swallow-error que LR-001 erradicó + `changeRole`/`removeMember` ignoraban el `error` del write. Fix: predicado `.neq('role','owner')` **plegado en el propio UPDATE/DELETE** (atómico · sin SELECT-then-write) + propagación del error real (throw) en vez de no-op silencioso. Se eliminó `isManageableTarget`.
+  - **lr_bug_002** (multi-tenant·tests·atomicity) · `0002:mbr_write`: el invariante single-owner (SD-cos-11) vivía solo en las Server Actions. Fix: `role <> 'owner'` en USING **y** WITH CHECK → un Owner con su JWT no puede crear un 2º Owner, promover a Owner, ni borrar/mutar al Owner vía PostgREST directo. Regression: Escenario 8 (`G-write.8`) en `PRP-002-rls-isolation.sql` + unit de `assignableRoleSchema`/`addMemberSchema`/`changeRoleSchema` rechazando `owner`.
+  - **lr_bug_003** (correctness) · `select-organization/page.tsx`: sin session-gate ni try/catch, asimétrico con `onboarding`. Fix: `getSessionUser`→`/login` + `try/catch`→`/login?error=session` (paridad exacta con el hermano).
+  - **lr_bug_004** (a11y) · `org-switcher` + `members-manager`: dos `<select>` con side-effect en `onChange` (WCAG 3.2.2). Fix: la acción ocurre solo al confirmar (submit del form · botón "Cambiar" / "Guardar"). e2e G7 + CRUD actualizados al nuevo flujo.
+  - **lr_bug_005** (tests) · `COVERAGE.md` no mapeaba `helpers-shape-invariants.sql`. Fix: fila agregada + filas de los helpers extraídos/specs nuevos.
+  - **lr_bug_007** (security) · `login/actions.ts`: `emailRedirectTo` desde el header `Origin`. Fix: `NEXT_PUBLIC_SITE_URL` server-side con fallback a `origin` solo en dev (la allow-list de Supabase sigue siendo la red principal · config de deploy).
+  - **lr_bug_008** (atomicity · **Bif A firmada user**) · `create_organization_with_owner` no idempotente. Fix: **token de idempotencia por `(user, request)`**: columna `idempotency_key` + índice único parcial en `0001` · RPC (3 args) devuelve la org ya creada si el mismo request reintenta · form genera el UUID en `useEffect` (hidratación-safe) + hidden field + `requestId` en el schema. Preserva multi-org (no gatea a "0 memberships"). Regression: `G4.idem` en `PRP-002-helpers-and-rpcs.sql`.
+  - **lr_bug_009/010/011** (tests) · fixes de LR-001/Fase 4 sin regression spec. Fix: extracción de helpers puros testeables (`fetchActiveMemberships` uncached · `sortMembersPendingFirst` · `slugCandidate`) + unit tests (error≠vacío · orden pending-first · colisión de slug `-n` sin doble guión). `vitest.config` gana alias `@/`→`./src` para testear módulos con imports por alias.
+- **3 diferidos a DT (out-of-scope · firma 🔵 user):** **DT-006** (slug inmutable app-only · sin caller UPDATE de org hoy · disparador: 1ra superficie de edición de org) · **DT-007** (voseo vs neutro LATAM · decisión de vocabulario del producto sin firmar) · **DT-008** (touch target 44px · AA-compliant · decisión de sizing del DS / matriz Claude Design).
+- **Verificación post-fix:** typecheck verde · 20 unit (4 files) verdes · build verde · idempotencia (`test-migrations.sh`) 2 pasadas idénticas · suite SQL 7/7 verde (G-write.8 Owner-inmutable + G4.idem idempotencia nuevos). Los e2e actualizados (G7/CRUD/G4) se validan end-to-end en el paso 5 `/validar`.
 
 ### [2026-07-02] Fase 2 · G5 happy-path (envío real de magic link) no automatizable en CI → DT-003
 - **Error:** el test de "form→Revisá tu email" fallaba: `signInWithOtp` rechaza el TLD `.test` (`email_address_invalid`) y el SMTP built-in de Supabase rate-limitea a ~2/hora (`429 over_email_send_rate_limit`).
