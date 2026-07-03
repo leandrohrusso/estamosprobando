@@ -47,6 +47,37 @@ test('G6 · staff es bloqueado en /members y owner la ve', async ({ page }) => {
   }
 })
 
+test('ISO · un no-miembro obtiene 404 en dashboard y members de una org ajena', async ({
+  page,
+}) => {
+  const stamp = Date.now()
+  const slugA = `iso-a-${stamp}`
+  const slugB = `iso-b-${stamp}`
+  const ownerA = `owner-a-${stamp}@puertita.test`
+  const outsider = `outsider-${stamp}@puertita.test`
+
+  const orgA = await createOrganizationDirect(`ISO Org A ${stamp}`, slugA)
+  const orgB = await createOrganizationDirect(`ISO Org B ${stamp}`, slugB)
+  try {
+    await addActiveMember(orgA, ownerA, 'owner')
+    await addActiveMember(orgB, outsider, 'owner') // miembro de B · ajeno a A
+
+    // outsider tiene sesión válida pero NO pertenece a la org A:
+    // requireMembership → notFound() (404) · no se le revela la existencia de A
+    // (asimetría deliberada · miembro-sin-rol → redirect · no-miembro → 404).
+    await signInAs(page, outsider)
+    const dash = await page.goto(`/${slugA}/dashboard`)
+    expect(dash?.status()).toBe(404)
+    const members = await page.goto(`/${slugA}/members`)
+    expect(members?.status()).toBe(404)
+  } finally {
+    await deleteOrganizationBySlug(slugA)
+    await deleteOrganizationBySlug(slugB)
+    await deleteTestUser(ownerA)
+    await deleteTestUser(outsider)
+  }
+})
+
 test('G7 · usuario multi-org elige y cambia de organización', async ({
   page,
 }) => {
@@ -145,9 +176,21 @@ test('CRUD · owner cambia el rol y quita a un miembro', async ({ page }) => {
     await page.goto(`/${slug}/members`)
     await expect(page.getByText(memberEmail)).toBeVisible()
 
+    // La fila del propio Owner NO ofrece controles de rol/baja (Owner inmutable ·
+    // anti-lockout · SD-cos-11) — solo el staff los tiene.
+    await expect(
+      page.getByRole('button', { name: `Guardar rol de ${ownerEmail}` }),
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('button', { name: `Quitar a ${ownerEmail}` }),
+    ).toHaveCount(0)
+
     // Cambia el rol staff → admin: elige y confirma con "Guardar" (submit explícito ·
     // ya no auto-submitea en onChange · LR-002 lr_bug_004).
-    await page.getByLabel(`Rol de ${memberEmail}`).selectOption('admin')
+    // `exact: true` para no colisionar con el botón hermano cuyo aria-label
+    // "Guardar rol de {email}" es superstring de "Rol de {email}" (getByLabel
+    // matchea por substring case-insensitive por default).
+    await page.getByLabel(`Rol de ${memberEmail}`, { exact: true }).selectOption('admin')
     await page.getByRole('button', { name: `Guardar rol de ${memberEmail}` }).click()
     await expect
       .poll(async () => (await getOrgMembership(orgId, memberEmail))?.role)
