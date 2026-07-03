@@ -13,7 +13,7 @@
 > **Progreso del flujo de 6 pasos:**
 > 1. ☑ `/arrancar`
 > 2. ☑ `/planificar` → APROBADO (2026-07-01 · 5 bifurcaciones firmadas 🔵 user)
-> 3. ☐ `/implementar` (2/4 fases · Fase 2 cerrada)
+> 3. ☐ `/implementar` (3/4 fases · Fase 3 cerrada)
 > 4. ☐ `/revisar`
 > 5. ☐ `/validar` (CSV)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
@@ -49,9 +49,9 @@ Establecer la fundación de identidad y aislamiento multi-tenant de PUERTITA: lo
 - [ ] **G3 · Helpers RLS correctos** · `is_member_of(org)` y `has_role(org, roles)` retornan el booleano esperado según memberships `active` (test SQL).
 - [x] **G4 · Onboarding** · e2e (Fase 2): usuario nuevo sin org → pantalla "crear organización" → al confirmar existe 1 fila `organizations` + 1 `memberships` con `role='owner'`, `status='active'` · slug determinístico validado.
 - [~] **G5 · Magic link** · Fase 2 · **parcial**: el callback (`/auth/confirm`) establece sesión y redirige según membership → ✅ probado end-to-end por G4 vía el route real. El form de login (validación + estructura) ✅ probado. El happy-path "form→enviado" (envío real de email) → diferido a **DT-003** (SMTP built-in rate-limited · disparador TASK-008 Resend) · cubierto por smoke visual Fase 4 + manual.
-- [ ] **G6 · RBAC gate** · e2e: un usuario `staff` que navega a la página de gestión de miembros es redirigido/bloqueado (403) · un `owner` la ve.
-- [ ] **G7 · Selección de organización** · e2e: usuario con ≥2 memberships ve el selector y al cambiar de org cambia el contexto (`/{org-slug}/...`).
-- [ ] **G8 · Alta de miembro por email** · e2e/SQL: Owner da de alta email+rol → `membership` `pending` (user_id NULL) → al hacer login esa persona, se vincula (`user_id` seteado, `status='active'`).
+- [x] **G6 · RBAC gate** · e2e (Fase 3): un `staff` que navega a `/members` es **redirigido** a su dashboard (bloqueado · `requireRole` · ver Aprendizajes sobre 403 vs redirect) · un `owner` la ve.
+- [x] **G7 · Selección de organización** · e2e (Fase 3): usuario con ≥2 memberships ve `/select-organization` y con el `org-switcher` cambia el contexto (`/{org-slug}/dashboard`).
+- [x] **G8 · Alta de miembro por email** · e2e (Fase 3): Owner da de alta email+rol → `membership` `pending` (user_id NULL) → al loguear esa persona, se vincula (`user_id` seteado, `status='active'`) y aterriza en el dashboard sin acceso a `/members`.
 - [ ] **G9 · DT-001 cerrada** · `run-sql-tests.sh` usa `TEST_DATABASE_URL` (grep no encuentra `DATABASE_URL` como var de conexión) · suite SQL corre real.
 - [ ] **G10 · Cobertura DoD** · 10-20 tests nuevos entre `tests/sql/` y `tests/e2e/regression/` (regla #17) · `npm run typecheck` + `npm run build` verdes.
 
@@ -470,3 +470,27 @@ END; $$;
 - **Root cause:** el envío real de email depende del SMTP built-in de Supabase (bajo límite · sin SMTP propio hasta TASK-008/Resend) · no es un bug de código.
 - **Fix:** **escalado al user** (regla `always-fix-all-bugs` § excepción · servicio externo no integrado) → firma 🔵 **opción A**: **DT-003**. Spec G5 automatizado queda determinístico (validación de form + estructura) · el pipeline de auth end-to-end lo prueba G4 vía el route real `/auth/confirm` · el happy-path "form→enviado" se cubre en el smoke visual de Fase 4 + manual · re-habilitación automatizada al integrar SMTP propio (TASK-008).
 - **Aplicar en:** cualquier feature futura que dependa de envío de email transaccional (tickets · TASK-008) · no acoplar tests automatizados al SMTP built-in rate-limited.
+
+### [2026-07-03] Fase 3 · Owner inmutable vía UI + roles asignables acotados a admin|staff (anti-lockout)
+
+- **Decisión (SD-cos-11 · agente · rec early · pendiente confirmación user en paso 4):** `addMember`/`changeRole` solo asignan `admin`|`staff` (`assignableRoleSchema`) · el rol Owner se obtiene **solo** en el onboarding (creador de la org · SD-cos-1) y es **inmutable** desde la gestión de miembros (`removeMember`/`changeRole` rechazan targets con `role='owner'`). 
+- **Por qué:** garantiza que ninguna acción de gestión pueda dejar la org **sin Owner** (lockout: sin Owner nadie puede gestionar miembros ni editar la org · `org_update`/`mbr_write` son owner-gated). Alternativa "permitir owners + guard de último owner" requiere contar owners en cada baja/cambio · más lógica y casos borde. La versión acotada es KISS y cubre el MVP.
+- **Tradeoff / reversibilidad:** hoy no hay co-owners ni transferencia de propiedad · agregarlos sería un follow-up chico (sumar `owner` al enum asignable + guard de último owner + transferencia). **A confirmar con el user en `/revisar`:** ¿el MVP necesita multi-owner / transferencia, o alcanza con Owner único inmutable?
+
+### [2026-07-03] Fase 3 · `requireRole` bloquea con redirect al dashboard (no 403 literal)
+
+- **Decisión:** un miembro de la org sin el rol requerido (`staff` en `/members`) es **redirigido a `/{slug}/dashboard`** (G6). El criterio G6 decía "redirigido/bloqueado (403)" · el 403 literal en Next 16 exige `forbidden()` (experimental · `experimental.authInterrupts`) + `forbidden.tsx` · contra `simplicity-first`. El redirect satisface "redirigido/bloqueado" sin config experimental y da mejor UX (un miembro legítimo no merece un 404/403 críptico · va a su home).
+- **`requireMembership` (no-miembro):** sí usa `notFound()` (404) · a quien **no pertenece** a la org no le revelamos su existencia. La asimetría es deliberada (miembro-sin-rol → redirect · no-miembro → 404).
+
+### [2026-07-03] Fase 3 · `cache()` de React en `getSessionUser`/`getActiveMemberships` (dedup por request)
+
+- **Cambio:** ambos helpers de `session.ts` se envolvieron en `cache()` (React). El layout `(org)/[orgSlug]` y su page hija (+ el guard `requireRole` de `/members`) los invocan varias veces por request · sin `cache()` cada llamada dispara un `getUser()` (round-trip al servidor de Auth). Con `cache()` se resuelven una vez por request. Cero cambio de comportamiento (queries read-only) · solo evita round-trips redundantes.
+
+### [2026-07-03] Fase 3 · Guard de slugs reservados (colisión de `/{orgSlug}` con rutas estáticas)
+
+- **Contexto:** Fase 3 monta el route group `(org)/[orgSlug]` en la raíz · `/{orgSlug}/...` comparte primer nivel con `/login` · `/onboarding` · `/select-organization` · `/auth`. Next resuelve los segmentos estáticos con prioridad, pero una org cuyo nombre slugifique a uno de esos valores (o `api`) generaría rutas confusas.
+- **Fix (in-scope · introducido por Fase 3):** `RESERVED_SLUGS` + `isReservedSlug` en `slug.ts` · `createOrganization` trata un base reservado como colisión y arranca en `-2` (mismo mecanismo que el sufijo de unicidad · SD-cos-8). Regression-first: `tests/unit/PRP-002-slug.test.ts`.
+
+### [2026-07-03] Fase 3 · Cierre · cobertura de tests
+
+- **DoD Fase 3:** 4 specs e2e nuevos (`PRP-002-rbac-and-orgs.spec.ts` · G6/G7/G8 + CRUD) + 4 unit (`PRP-002-slug.test.ts`) · typecheck + build verdes · suite e2e 8/8 + SQL 7/7 + unit 5/5. Fase 3 no agregó DDL (schema/RLS/RPCs de Fase 1 ya cubren members owner-gated) · idempotencia G1 sin delta. Contador acumulado vs meta 10-20 se cierra en Fase 4 (validación final).

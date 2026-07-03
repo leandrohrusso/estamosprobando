@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { User } from '@supabase/supabase-js'
 
@@ -15,25 +16,32 @@ export type ActiveMembership = {
  * Devuelve el usuario autenticado (o `null`). Usa `getUser()` (valida contra el
  * servidor de Auth) · nunca `getSession()` desde el servidor (confía en la
  * cookie sin validar).
+ *
+ * `cache()` de React: dedup por request · el layout `(org)/[orgSlug]` y su page
+ * hija resuelven la sesión sin duplicar el round-trip al servidor de Auth.
  */
-export async function getSessionUser(): Promise<User | null> {
+export const getSessionUser = cache(async (): Promise<User | null> => {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   return user
-}
+})
 
 /**
  * Memberships `active` **propias** del usuario en sesión (filtro explícito por
  * `user_id` · no las de otros miembros de sus orgs que RLS también dejaría ver).
- * Base del algoritmo de redirect post-login (SD-cos-9).
+ * Base del algoritmo de redirect post-login (SD-cos-9) y de los guards de
+ * contexto de organización (`requireMembership`/`requireRole` · Fase 3).
+ *
+ * `cache()` de React: dedup por request (layout + page + org-switcher comparten
+ * el resultado).
  */
-export async function getActiveMemberships(): Promise<ActiveMembership[]> {
+export const getActiveMemberships = cache(async (): Promise<
+  ActiveMembership[]
+> => {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getSessionUser()
   if (!user) return []
 
   const { data, error } = await supabase
@@ -62,4 +70,4 @@ export async function getActiveMemberships(): Promise<ActiveMembership[]> {
       name: org.name as string,
     }
   })
-}
+})

@@ -50,6 +50,8 @@ Cuando el CSV de `/validar` genera specs nuevos vía regression-first FIRME (reg
 | `src/app/layout.tsx` · `src/app/page.tsx` | PRP-001 | `tests/e2e/regression/prp-001-scaffold.spec.ts` — la home responde 200 y rinde el placeholder de PUERTITA (scaffold smoke · sin DB) | E2E | ✅ activo |
 | `src/app/(auth)/login/*` · `src/app/auth/confirm/route.ts` · `src/app/(auth)/onboarding/*` · `src/lib/auth/*` · `src/proxy.ts` · `src/lib/supabase/middleware.ts` | PRP-002 | `tests/e2e/regression/PRP-002-auth-onboarding.spec.ts` — login (form magic link + validación) · onboarding vía route real `/auth/confirm` → Owner (G4/G5) | E2E | ✅ activo |
 | tablas `organizations` · `memberships` (RLS + helpers + RPCs) | PRP-002 | `tests/sql/PRP-002-rls-isolation.sql` (aislamiento cross-tenant · G2) · `tests/sql/PRP-002-helpers-and-rpcs.sql` (`is_member_of`/`has_role`/RPCs · G3/G4/G8) | sql | ✅ activo |
+| `src/app/(org)/[orgSlug]/*` · `src/app/(auth)/select-organization/*` · `src/components/nav/*` · helpers `requireMembership`/`requireRole`/`getOrgMembers` (`src/lib/auth/org.ts`) · actions de miembros | PRP-002 | `tests/e2e/regression/PRP-002-rbac-and-orgs.spec.ts` — RBAC gate (staff bloqueado / owner ve · G6) · selector multi-org (G7) · alta pending → vinculación al login (G8) · CRUD de miembros (add/changeRole/remove) | E2E | ✅ activo |
+| `src/lib/auth/slug.ts` (slugify + guard de slugs reservados) | PRP-002 | `tests/unit/PRP-002-slug.test.ts` — slugify determinístico + `isReservedSlug` (colisión de `/{orgSlug}` con rutas estáticas · Fase 3) | unit | ✅ activo |
 
 ---
 

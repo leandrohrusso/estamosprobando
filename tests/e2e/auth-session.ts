@@ -128,3 +128,88 @@ export async function deleteOrganizationBySlug(slug: string): Promise<void> {
   const a = admin()
   await a.from('organizations').delete().eq('slug', slug)
 }
+
+// ---------------------------------------------------------------------------
+// Setup directo de tenants/miembros para specs de RBAC/multi-org (Fase 3 ·
+// G6/G7/G8). Todo vía `service_role` (bypassa RLS · SD-cos-10 · solo test).
+// Complementan al onboarding real (que crea org + Owner en un paso): acá
+// necesitamos armar escenarios con roles y estados arbitrarios.
+// ---------------------------------------------------------------------------
+
+/** Crea una organización directamente (sin RPC de onboarding). Devuelve su id. */
+export async function createOrganizationDirect(
+  name: string,
+  slug: string,
+): Promise<string> {
+  const a = admin()
+  const { data, error } = await a
+    .from('organizations')
+    .insert({ name, slug })
+    .select('id')
+    .single()
+  if (error || !data) {
+    throw new Error(`No pude crear la org ${slug}: ${error?.message}`)
+  }
+  return data.id as string
+}
+
+/**
+ * Crea (si hace falta) el test user y le agrega una membership **activa** con el
+ * rol dado en la org. Sirve para armar Owners/Staff activos de un escenario.
+ */
+export async function addActiveMember(
+  organizationId: string,
+  email: string,
+  role: 'owner' | 'admin' | 'staff',
+): Promise<void> {
+  const a = admin()
+  const userId = await ensureTestUser(email)
+  const { error } = await a.from('memberships').insert({
+    organization_id: organizationId,
+    user_id: userId,
+    email: email.toLowerCase(),
+    role,
+    status: 'active',
+  })
+  if (error) {
+    throw new Error(`No pude agregar miembro activo ${email}: ${error.message}`)
+  }
+}
+
+/** Agrega una membership **pending** (user_id NULL) · invitación sin vincular. */
+export async function addPendingMember(
+  organizationId: string,
+  email: string,
+  role: 'admin' | 'staff',
+): Promise<void> {
+  const a = admin()
+  const { error } = await a.from('memberships').insert({
+    organization_id: organizationId,
+    email: email.toLowerCase(),
+    role,
+    status: 'pending',
+  })
+  if (error) {
+    throw new Error(`No pude agregar miembro pending ${email}: ${error.message}`)
+  }
+}
+
+/** Membership (role/status/userId) por org+email · `null` si no existe. */
+export async function getOrgMembership(
+  organizationId: string,
+  email: string,
+): Promise<{ role: string; status: string; userId: string | null } | null> {
+  const a = admin()
+  const { data, error } = await a
+    .from('memberships')
+    .select('role, status, user_id')
+    .eq('organization_id', organizationId)
+    .eq('email', email.toLowerCase())
+    .maybeSingle()
+  if (error || !data) return null
+  return {
+    role: data.role as string,
+    status: data.status as string,
+    userId: (data.user_id as string | null) ?? null,
+  }
+}
