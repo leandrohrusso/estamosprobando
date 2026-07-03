@@ -1,6 +1,6 @@
 # PRP-002 · Auth + organizaciones + memberships + RLS base
 
-> **Estado**: EN PROGRESO (paso 4 cerrado · 5 + 6 pendientes)
+> **Estado**: EN PROGRESO (paso 5 cerrado · 6 pendiente)
 > **Fecha**: 2026-07-01
 > **Proyecto**: PUERTITA
 > **Tipo**: feature producto
@@ -15,7 +15,7 @@
 > 2. ☑ `/planificar` → APROBADO (2026-07-01 · 5 bifurcaciones firmadas 🔵 user)
 > 3. ☑ `/implementar` (4/4 fases · paso 3 cerrado · validación final G1–G10 verde)
 > 4. ☑ `/revisar` (LR-001 + LR-002 · 9 agentes · 10 normales in-scope LR-002 fixeados con regression-first FIRME + 3 DT · typecheck+build+unit+SQL verdes)
-> 5. ☐ `/validar` (CSV)
+> 5. ☑ `/validar` (CSV 56 filas · 55 Funciona / 1 Diferido DT-003 · e2e 8/8 + SQL 7/7 + unit 20/20 verdes · commit 5331251)
 > 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
 
 ---
