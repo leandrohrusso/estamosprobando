@@ -1,5 +1,16 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Page } from '@playwright/test'
+import { WebSocket as NodeWebSocket } from 'ws'
+
+// `createClient` de @supabase/supabase-js construye un RealtimeClient eager que exige
+// un `WebSocket` global (Node < 21 no lo trae nativo · el CI corre Node 20). Este helper
+// solo usa `auth.admin` + queries REST (nunca abre una conexión realtime), pero el
+// constructor igual pide el WS. Polyfill defensivo cuando el runtime no lo expone
+// (no-op en Node ≥ 21, ej. el local en v24 · activo en el runner CI Node 20).
+{
+  const g = globalThis as unknown as { WebSocket?: unknown }
+  if (typeof g.WebSocket === 'undefined') g.WebSocket = NodeWebSocket
+}
 
 /**
  * Utilidades de sesión para specs e2e (SD-cos-10). Usan la **Supabase Admin API**
