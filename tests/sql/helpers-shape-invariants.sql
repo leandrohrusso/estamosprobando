@@ -81,6 +81,12 @@ BEGIN
   --   INSERT INTO public_definer_whitelist (rpc_name, reason) VALUES
   --     ('current_user_has_perm', 'Helper RLS canónico · EXECUTE a authenticated · filtra internamente por auth.uid().'),
   --     ('track_click', 'Pixel público anon · contador analytics sin escritura sensible.');
+  INSERT INTO public_definer_whitelist (rpc_name, reason) VALUES
+    ('is_member_of', 'Helper RLS canónico · EXECUTE a authenticated · invocado desde policies USING · filtra por auth.uid() · SECURITY DEFINER evita recursión sobre memberships (PRP-002 Bif 1=A).'),
+    ('has_role', 'Helper RLS canónico RBAC · EXECUTE a authenticated · invocado desde policies · filtra por auth.uid() + rol activo (PRP-002 Bif 1=A).'),
+    ('create_organization_with_owner', 'RPC onboarding · EXECUTE a authenticated · crea org + membership Owner atómicamente · resuelve chicken-and-egg de RLS · valida auth.uid() (PRP-002 SD-cos-1).'),
+    ('link_pending_memberships', 'RPC vinculación · EXECUTE a authenticated · vincula memberships pending por auth.email() al login (PRP-002 SD-cos-2).')
+  ON CONFLICT (rpc_name) DO NOTHING;
 
   -- WHITELIST 2 · Trigger fns sin EXECUTE a roles externos. Las trigger
   -- fns se ejecutan implícitamente desde el trigger del schema · NO
@@ -106,6 +112,10 @@ BEGIN
   --   INSERT INTO rls_canonical_helpers (proname) VALUES
   --     ('current_user_has_perm'),
   --     ('current_user_is_super_admin');
+  INSERT INTO rls_canonical_helpers (proname) VALUES
+    ('is_member_of'),
+    ('has_role')
+  ON CONFLICT (proname) DO NOTHING;
 
   -- ====================================================================
   -- INV-A · SECURITY DEFINER → proconfig contiene search_path

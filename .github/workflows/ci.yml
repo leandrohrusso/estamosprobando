@@ -100,6 +100,15 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     needs: [build]
+    # TEST DB real vía secret env vars (cableado en PRP-002 · TASK-002 · 🔵 Bif 1=A de PRP-001).
+    # El webServer de Next (Playwright) crea el cliente Supabase con las NEXT_PUBLIC_*;
+    # el helper de sesión e2e (tests/e2e/auth-session.ts) usa SERVICE_ROLE_KEY + URL para
+    # mintear sesiones vía Admin API; los state smokes usan TEST_DATABASE_URL.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -110,9 +119,6 @@ jobs:
       # Playwright browsers + system deps (Chromium · el config usa solo chromium).
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-      # TEST DB real + seed vía secret env vars → TASK-002 (🔵 Bif 1=A de PRP-001).
-      # Hoy el job corre el smoke E2E del scaffold (página estática · sin DB);
-      # los state smokes skipean cleanly sin TEST_DATABASE_URL.
       - name: Smoke · state baseline post-migrations
         run: bash tests/scripts/infra-flujo/state-baseline-post-migrations.sh
       - name: Smoke · state assertion pre-e2e
@@ -124,6 +130,11 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     needs: [build]
+    # TEST DB real vía secret env var (cableado en PRP-002 · TASK-002). Los specs
+    # SQL se auto-seedan (\i test-seed.sql) y corren en BEGIN..ROLLBACK; run-sql-tests.sh
+    # es skip-safe si TEST_DATABASE_URL falta (no rompe · pero deja de validar).
+    env:
+      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

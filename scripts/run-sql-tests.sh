@@ -16,7 +16,7 @@
 # Comportamiento:
 #   1. Si `tests/sql/` no tiene archivos .sql → skip con notice (cero ABORT).
 #   2. Si `psql` no está instalado → ABORT con mensaje claro.
-#   3. Si DATABASE_URL no está seteado → ABORT con mensaje claro.
+#   3. Si TEST_DATABASE_URL no está seteado → skip-safe (cero ABORT).
 #   4. Itera sobre tests/sql/*.sql · ejecuta con `psql -v ON_ERROR_STOP=1 -f`.
 #   5. Reporta exit code agregado (1 si algún spec falló · 0 si todos verdes).
 # =====================================================================
@@ -33,11 +33,10 @@ if [ ${#SQL_FILES[@]} -eq 0 ]; then
   exit 0
 fi
 
-# 1.5 · Skip-safe si no hay TEST DB configurada todavía (paridad state-baseline.sh)
-# Al boot los .sql invariantes existen pero NO hay TEST DB (→ TASK-002 · 🔵 Bif 1=A
-# de PRP-001). Skipea cleanly · cuando TASK-002 exporte DATABASE_URL, corre real.
-if [ -z "${DATABASE_URL:-}" ]; then
-  echo "::notice::run-sql-tests · DATABASE_URL no seteada · TEST DB no configurada (specs SQL → TASK-002) · SKIP"
+# 1.5 · Skip-safe si no hay TEST DB configurada todavía (paridad state-baseline.sh
+# + test-migrations.sh · var unificada TEST_DATABASE_URL · DT-001 cerrada en PRP-002).
+if [ -z "${TEST_DATABASE_URL:-}" ]; then
+  echo "::notice::run-sql-tests · TEST_DATABASE_URL no seteada · TEST DB no configurada · SKIP"
   exit 0
 fi
 
@@ -50,11 +49,11 @@ if ! command -v psql &> /dev/null; then
 fi
 
 # 3 · Ejecutar cada spec con ON_ERROR_STOP (paridad regla #32 idempotencia)
-#     DATABASE_URL ya garantizada por el guard skip-safe del paso 1.5.
+#     TEST_DATABASE_URL ya garantizada por el guard skip-safe del paso 1.5.
 EXIT_CODE=0
 for sql_file in "${SQL_FILES[@]}"; do
   echo "→ ejecutando: $sql_file"
-  if ! psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$sql_file"; then
+  if ! psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$sql_file"; then
     echo "::error::$sql_file falló"
     EXIT_CODE=1
   fi

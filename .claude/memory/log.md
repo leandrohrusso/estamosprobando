@@ -75,3 +75,19 @@ type: log
 **Detalle:** 🔵 Bif 1=A (frontera de scope: PRP-001 entrega deps + src/app mínimo + cliente Supabase skeleton + CI con typecheck/lint/build/unit verdes + e2e smoke sin DB + sql/state-baseline skip-safe · TEST DB real + specs e2e/sql con datos diferidos a TASK-002 donde nace el schema). 🔵 Bif 2=A (Tailwind v3 · respeta los stubs del template · cero reescritura · migración a v4 sería PRP propio). Claude Design SKIP firmado (matriz no dispara · página placeholder estática). Skeptic levantó 5 issues operativos + asunciones · todos refinados pre-firma (versiones del stack a documentar en `.claude/memory/reference/stack-versions-PRP-001.md` para que TASK-002 las herede · criterio para vitest.config · next-env.d.ts por convención oficial · nota regla #17 tests en Fase 3 por bootstrapping del harness). Commit local sin push (regla #27 · push reservado al paso 6).
 
 **Refs:** PRP `.claude/PRPs/PRP-001-scaffold-infra-base.md` · roadmap TASK-001 · `BUSINESS_LOGIC.md §7`.
+
+## [2026-07-01] prp-close | PRP-001 scaffold + infra base mergeado a main
+
+**Resumen:** PRP-001 (TASK-001 · scaffold + infra base) entregado a `main` vía PR #1 `--squash` (`e4a9036`). Primer PRP del proyecto · trajo bootstrap + scaffold a `main` juntos (política del bootstrap fundacional).
+
+**Detalle:** Flujo de 6 pasos completo: /planificar (2 bifurcaciones 🔵 + Claude Design SKIP) → /implementar (4 fases · ci:local 6/6) → /revisar-simple (0 critical · 0 normal · 1 nit fixeado) → /validar SKIP firmado (scaffold sin superficie validable) → /entregar (ci:local gate → push → PR #1 draft → decisión NO /ultrareview → gh pr ready → CI remoto 1 run verde → merge --squash → sync-dev). Entregó: Next 16.2.9 + React 19.2.7 + Tailwind v3.4.19 (Bif 2=A) + @supabase/ssr skeleton + eslint 9 (no 10 por compat) + TS 6 · `src/app` + globals.css con tokens DS · wiring CI (Playwright --with-deps · run-sql-tests skip-safe · job-order-parity). Gotchas: eslint 10 rompe install · Playwright system libs (sudo install-deps) · run-sql skip-safe. Sync post-squash: force-with-lease benigno (remoto ya en target) · invariante origin/dev==origin/main verificado. Scope 🔵 Bif 1=A: TEST DB + auth/RLS + specs con datos → TASK-002. DT-001 abierta.
+
+**Refs:** PR #1 · commit `e4a9036` · PRP `.claude/PRPs/PRP-001-scaffold-infra-base.md` · roadmap TASK-001 · DT-001.
+
+## [2026-07-01] decision | PRP-002 auth + organizaciones + memberships + RLS base APROBADO · 5 bifurcaciones firmadas
+
+**Resumen:** PRP-002 (TASK-002) planificado y APROBADO. Complejidad 🟡 MEDIA · 4 fases (Fase 1 punto-de-no-retorno · DDL en TEST DB cloud). Cierra DT-001 (`DATABASE_URL`→`TEST_DATABASE_URL`).
+
+**Detalle:** `/planificar` con 3 personas pre-draft (architect-planning · complexity MEDIA · historical-precedent) + skeptic post-draft (6 refinamientos incorporados: redirect explícito · gate TEST_DATABASE_URL · sesión de test vía Admin API · índice compuesto RLS · slug validado/inmutable · guard service_role). Bifurcaciones 🔵 user 2026-07-01: **Bif1=A** helper `SECURITY DEFINER` (`is_member_of`/`has_role`) para RLS · **Bif2=A** onboarding "crear org" un-paso → Owner · **Bif3=A** alta de miembro por email+rol → membership `pending` → vinculación al login, sin Resend · **Bif4=A** audit_log diferido a TASK-003 · **Claude Design SKIP** (backoffice convencional). Modelo: `organizations` + `memberships` (enums role/status) + helpers SECURITY DEFINER + RPCs `create_organization_with_owner`/`link_pending_memberships`. Routing path-based `/{org-slug}` (PRD §3.3). Superadmin/Resend/tablas de negocio fuera de scope.
+
+**Refs:** PRP `.claude/PRPs/PRP-002-auth-organizations-memberships-rls.md` · roadmap TASK-002 · DT-001 (destino).

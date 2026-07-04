@@ -67,6 +67,10 @@ Convenciones del pack workflow-base. Para sesiones nuevas:
 - [Operaciones bulk del agente (≥10 archivos) requieren firma user previa](feedback/bulk-auto-fix-needs-pre-signature.md) — auto-fix de linters · prettier --write · bulk rename · regex masivo · cualquier batch ≥10 archivos exige plan al user + firma explícita ANTES de ejecutar. Cero "fix masivo silencioso". Recovery con 3 opciones (revertir · mantener · híbrido) si ya pasó.
 - [`markdownlint --fix` puede romper listas numeradas con semántica](feedback/markdownlint-fix-breaks-semantic-lists.md) — MD029 renumera silenciosamente listas `4.` semánticas a `1.` · NUNCA correr `--fix` sin diff post-fix + revisión manual. Si hay listas semánticas, deshabilitar MD029 en `.markdownlint.json` ANTES de ejecutar.
 
+**Testing / e2e (descubiertos en el proyecto):**
+
+- [Playwright `getByLabel` matchea por substring → colisiona con aria-labels superstring](feedback/playwright-getbylabel-substring-collision.md) — `getByLabel('Rol de X')` sin `{exact:true}` matchea el `<select aria-label="Rol de X">` Y su botón hermano `"Guardar rol de X"` (superstring) → strict-mode violation. Detectado en `/validar` PRP-002 (CRUD miembros post-LR-002 onChange→submit). Usar `{exact:true}` o acotar por rol cuando dos accessible names comparten stem.
+
 ## reference/ — Punteros a recursos externos
 
 > **Cuándo crear entry:** info viva fuera del repo (Linear · Slack · Grafana · docs externas · MCPs · servicios cloud).
