@@ -1,6 +1,6 @@
 # PRP-002 · Auth + organizaciones + memberships + RLS base
 
-> **Estado**: EN PROGRESO (paso 5 cerrado · 6 pendiente)
+> **Estado**: COMPLETADO (mergeado `--squash` a `main` · `80964f0` · CI remoto 7/7 verde · 2026-07-04)
 > **Fecha**: 2026-07-01
 > **Proyecto**: PUERTITA
 > **Tipo**: feature producto
@@ -16,7 +16,7 @@
 > 3. ☑ `/implementar` (4/4 fases · paso 3 cerrado · validación final G1–G10 verde)
 > 4. ☑ `/revisar` (LR-001 + LR-002 · 9 agentes · 10 normales in-scope LR-002 fixeados con regression-first FIRME + 3 DT · typecheck+build+unit+SQL verdes)
 > 5. ☑ `/validar` (CSV 56 filas · 55 Funciona / 1 Diferido DT-003 · e2e 8/8 + SQL 7/7 + unit 20/20 verdes · commit 5331251)
-> 6. ☐ `/entregar` (ci:local + push + CI remoto + merge --squash)
+> 6. ☑ `/entregar` (ci:local 6/6 → push único → CI remoto 7/7 verde → merge `--squash` `80964f0` → sync-dev · 2 fixes de CI-red in-scope: env secrets Supabase + polyfill WebSocket Node 20)
 
 ---
 

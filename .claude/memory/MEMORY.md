@@ -70,6 +70,7 @@ Convenciones del pack workflow-base. Para sesiones nuevas:
 **Testing / e2e (descubiertos en el proyecto):**
 
 - [Playwright `getByLabel` matchea por substring → colisiona con aria-labels superstring](feedback/playwright-getbylabel-substring-collision.md) — `getByLabel('Rol de X')` sin `{exact:true}` matchea el `<select aria-label="Rol de X">` Y su botón hermano `"Guardar rol de X"` (superstring) → strict-mode violation. Detectado en `/validar` PRP-002 (CRUD miembros post-LR-002 onChange→submit). Usar `{exact:true}` o acotar por rol cuando dos accessible names comparten stem.
+- [`@supabase/supabase-js` en Node 20 (CI) tira "native WebSocket not found" · polyfill con `ws`](feedback/supabase-js-node20-websocket-polyfill.md) — `createClient` construye un `RealtimeClient` eager que exige `WebSocket` global · Node <21 no lo trae (CI corre Node 20) → helpers de test que usan el client completo rompen (aunque nunca abran realtime). Detectado en `/entregar` PRP-002. Fix: devDep `ws` + polyfill `globalThis.WebSocket`. Local (Node ≥21) no reproduce.
 
 ## reference/ — Punteros a recursos externos
 
